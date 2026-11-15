@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turbokningssystem - Prototyp</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f4f5f7; color: #222; }
+header { background: #1b4332; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+header h1 { font-size: 18px; margin: 0; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 20px; background: #2d6a4f; }
+nav button { background: #40916c; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+nav button.active { background: #95d5b2; color: #1b4332; font-weight: bold; }
+main { padding: 16px 20px 60px; max-width: 1200px; margin: 0 auto; }
+.screen { display: none; }
+.screen.active { display: block; }
+.card { background: white; border-radius: 6px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.card h2 { margin-top: 0; font-size: 17px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+.card h3 { font-size: 14px; color: #1b4332; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+th { background: #f0f2f1; }
+button.btn { background: #1b4332; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 2px; }
+button.btn:hover { background: #2d6a4f; }
+button.btn.secondary { background: #ccc; color: #222; }
+button.btn.danger { background: #c1121f; }
+button.btn.small { padding: 3px 7px; font-size: 11px; }
+input, select, textarea { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 100%; }
+label { font-size: 12px; font-weight: bold; display: block; margin: 8px 0 2px; }
+.badge { font-size: 9px; background: #e0e0e0; color: #555; border-radius: 3px; padding: 1px 4px; margin-left: 4px; vertical-align: middle; }
+.status { padding: 2px 8px; border-radius: 10px; font-size: 11px; color: white; }
+.status.open { background: #2d6a4f; }
+.status.full { background: #c1121f; }
+.status.pending { background: #e9a94d; color: #333; }
+.status.done { background: #555; }
+.status.cancelled { background: #999; }
+.status.ongoing { background: #0077b6; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap: 12px; }
+.tourcard { border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
+.tourcard h4 { margin: 0 0 4px; }
+.flag { background: #fff3cd; border: 1px solid #ffe08a; color: #7a5b00; font-size: 11px; padding: 4px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+.assumption { background: #e7f0ff; border: 1px solid #b6d0ff; color: #1a3e7a; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 200px; }
+.tabbar { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.tabbar button { background: #eee; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.tabbar button.active { background: #1b4332; color: white; }
+.msg { padding: 8px; border-radius: 4px; font-size: 13px; margin-top: 6px; }
+.msg.ok { background: #d4edda; color: #155724; }
+.msg.err { background: #f8d7da; color: #721c24; }
+.stars span { cursor: pointer; font-size: 18px; color: #ccc; }
+.stars span.active { color: #e9a94d; }
+footer.docs { background: white; margin-top: 30px; padding: 20px; border-top: 4px solid #1b4332; font-size: 13px; line-height: 1.6; }
+footer.docs h2 { color: #1b4332; }
+footer.docs ul { padding-left: 18px; }
+.pill { display:inline-block; background:#eee; border-radius:10px; padding:2px 8px; font-size:11px; margin:2px; }
+.small-note { font-size: 11px; color: #777; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Turbolaget — Adminportal &amp; Kundapp (prototyp)</h1>
+  <div class="small-note">Klickbar prototyp — alla 152 krav representerade</div>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<footer class="docs">
+<h2>Vad kraven inte sa</h2>
+<ul>
+<li><b>FR47/NFR12 motsägelse:</b> FR47 säger "enligt avtalad tid" men NFR12 anger 24 månader efter bokad tur. Vi har antagit att NFR12:s 24 månader är den avtalade tiden som FR47 syftar på, men vilket datum som räknas (bokningsdatum eller turdatum) är inte definierat.</li>
+<li><b>FR139 jämfört med FR19/FR20:</b> Det är oklart om kundtjänstens telefon-avbokning (FR139) ska följa samma 48h/24h-återbetalningsregler som självbetjänings-avbokning, eller om kundtjänst kan göra undantag. Vi har antagit samma regler gäller.</li>
+<li><b>FR13 "fullbokad" vs FR88 "tillgänglig":</b> Ingen regel anges för vad som händer om en fullbokad tur får en avbokning — vi har antagit att FR88 automatiskt triggas (tur blir tillgänglig igen) men det är inte explicit uttryckt.</li>
+<li><b>FR43 reservationstid (15 min) vs FR28:</b> Vad som visuellt skiljer en "reserverad" plats från en "bokad" plats för andra kunder som tittar samtidigt är inte specificerat — prototypen visar en nedräkning som assumption.</li>
+<li><b>FR35 ombokning "senast 24 timmar innan":</b> Det anges inte vad som händer med prisskillnad om den nya turen kostar annorlunda (t.ex. pga rabattregler FR142/FR155). Antagande: nytt pris gäller utan kompensation.</li>
+<li><b>FR54 "Utebliven":</b> Ingen regel för om detta påverkar återbetalning eller framtida bokningar — implementerat som ren statusmarkering utan konsekvens.</li>
+<li><b>FR81/FR141 målgrupp:</b> FR81 nämner "målgrupp" som fritextfält, medan FR141 kräver specifika kategorier ("Alla","18+","Barnfamiljer"). Vi har tolkat FR141 som en strukturerad vidareutveckling av FR81:s målgruppsfält.</li>
+<li><b>FR142/FR143 vs FR144/FR150 vs FR155 — kombinerade rabatter:</b> Inget krav anger om lågsäsongsrabatt, barnrabatt och återbesöksrabatt kan kombineras på samma bokning, eller i vilken ordning de räknas. Prototypen applicerar dem i turordning (lågsäsong → barn → återbesök) som ett tydligt märkt antagande.</li>
+<li><b>FR145–FR149 marknadsföringsflöde:</b> Ingen uppgift om vem (roll) som godkänner inlägg, hur ofta innehåll genereras, eller vilka sociala medier förutom Instagram (NFR26) som avses. Endast Instagram är byggt.</li>
+<li><b>FR152/FR153 "opopulär tur":</b> Ingen tröskel definieras för vad som räknas som opopulärt. Årsrapporten visar bokningsantal per kategori och låter administratören själv välja att ta bort — tröskelvärde är markerat som antagande.</li>
+<li><b>FR154/FR155 "bokningsnummer":</b> Formatet på bokningsnummer anges inte. Vi har antagit ett enkelt alfanumeriskt format (t.ex. BK-xxxx).</li>
+<li><b>MEA8/FR155 "6 månader":</b> Startpunkt för 6-månadersperioden (bokningsdatum eller turdatum) är inte angiven; vi har antagit turens genomförandedatum.</li>
+<li><b>NFR16 status "Draft":</b> Kravet är märkt Draft i källan men beskriver kärnfunktionalitet (ta emot publicerade kategorier för schemaläggning). Byggt som om aktivt, med badge som visar Draft-status.</li>
+<li><b>Roller och inloggning:</b> Inga krav beskriver inloggningsflöde i detalj (fält, lösenordsregler) för Turadministratör/Kundtjänst/Guide. En enkel rollväljare utan lösenord har byggts som minimal åtkomstpunkt, eftersom NFR11/NFR22/NFR23 kräver att obehöriga stängs ute men inte hur autentisering ska se ut.</li>
+<li><b>FR102 "mejl":</b> Inget e-postgränssnitt specificeras närmare; svaret visas som en logg-post i ärendet snarare än ett simulerat mejl, markerat som förenkling.</li>
+<li><b>FR146/FR147 AI-generering (NFR27):</b> Inga krav anger vilken text/bildkvalitet eller hur många förslag som ska genereras per begäran. Prototypen genererar ett exempel-textförslag och en platshållarbild per klick.</li>
+<li><b>FR61–64 "meddelanden":</b> Exakt innehåll/mall för förseningsmeddelanden (DS5–DS7) anges inte, bara att anledning ska anges. Ett fritextfält för anledning har antagits.</li>
+</ul>
+</footer>
+
+<script>
+const state = {
+  screen: 'kund-boka',
+  role: 'Kund',
+  bookingDraft: { category:null, language:null, tourId:null, people:1, name:'', email:'', phone:'', ages:[], bookingNumForDiscount:'' },
+  reservation: null,
+  bookings: [],
+  tickets: [],
+  reviews: [],
+  guides: [
+    {id:1, first:'Anna', last:'Berg', phone:'0701234567', email:'anna@turbolaget.se', languages:['Svenska','Engelska'], categories:['Stadsvandring'], active:true},
+    {id:2, first:'Erik', last:'Lund', phone:'0709876543', email:'erik@turbolaget.se', languages:['Engelska','Tyska'], categories:['Naturvandring'], active:true}
+  ],
+  categories: [
+    {id:'c1', name:'Stadsvandring', desc:'En promenad genom stadens historiska kärna.', theme:'Historia', audience:'Alla', length:'2 timmar', price:250, meeting:'Stortorget', route:'Centrum runt', maxP:20, languages:['Svenska','Engelska'], published:true},
+    {id:'c2', name:'Naturvandring', desc:'Vandring i skog och mark med guide.', theme:'Natur', audience:'Barnfamiljer', length:'3 timmar', price:300, meeting:'Naturreservatets entré', route:'Skogsslingan', maxP:15, languages:['Svenska','Engelska','Tyska'], published:true}
+  ],
+  schedule: [
+    {id:'t1', catId:'c1', date:'2025-07-10', time:'10:00', lang:'Svenska', guideId:1, max:20, participants:[{name:'Kalle Karlsson', age:34, present:null},{name:'Lisa Nord', age:8, present:null}], status:'Schemalagd'},
+    {id:'t2', catId:'c2', date:'2025-07-12', time:'09:00', lang:'Engelska', guideId:2, max:15, participants:[], status:'Schemalagd'},
+    {id:'t3', catId:'c1', date:'2025-06-01', time:'10:00', lang:'Svenska', guideId:1, max:20, participants:[{name:'Test Person', age:40, present:'Närvarande'}], status:'Genomförd'}
+  ],
+  lowSeasonDiscountActive:false,
+  marketingPosts: [],
+  discountRules: [],
+  annualReport: null
+};
+
+function go(screen){ state.screen = screen; render(); }
+
+const NAV = [
+  {id:'kund-boka', label:'Boka tur (Kund)'},
+  {id:'kund-mina', label:'Mina bokningar'},
+  {id:'kund-kundtjanst', label:'Kundtjänst'},
+  {id:'kund-recensioner', label:'Recensioner'},
+  {id:'admin-turmaterial', label:'Turmaterial'},
+  {id:'admin-schema', label:'Tur schema'},
+  {id:'admin-guider', label:'Guider'},
+  {id:'admin-turer', label:'Hantera turer'},
+  {id:'admin-kundtjanst', label:'Kundtjänst (admin)'},
+  {id:'admin-marknad', label:'Marknadsföring'},
+  {id:'admin-rapport', label:'Årsrapport'},
+  {id:'admin-system', label:'Systemkrav'}
+];
+
+function renderNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  NAV.forEach(n=>{
+    const b = document.createElement('button');
+    b.textContent = n.label;
+    b.className = state.screen===n.id ? 'active':'';
+    b.onclick = ()=>go(n.id);
+    nav.appendChild(b);
+  });
+}
+
+function fmtMoney(v){ return v.toFixed(0)+' kr'; }
+
+/* ---------- KUND: BOKA TUR ---------- */
+function renderKundBoka(){
+  const d = state.bookingDraft;
+  let html = `<div class="card"><h2>Tillgängliga turkategorier <span class="badge">FR1 FR2</span></h2>
+  <div class="grid">`;
+  state.categories.filter(c=>c.published).forEach(c=>{
+    html += `<div class="tourcard">
+      <h4>${c.name}</h4>
+      <div>${c.length} • ${fmtMoney(c.price)} <span class="badge">FR140</span></div>
+      <div class="small-note">Målgrupp: ${c.audience}</div>
+      <div class="small-note">Max ${c.maxP} deltagare <span class="badge">FR140</span></div>
+      <button class="btn" onclick="selectCategory('${c.id}')">Välj</button>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  if(d.category){
+    const cat = state.categories.find(c=>c.id===d.category);
+    html += `<div class="card"><h3>Välj språk <span class="badge">FR9 FR113</span></h3>
+    <select onchange="state.bookingDraft.language=this.value">
+      <option value="">-- välj --</option>
+      ${cat.languages.map(l=>`<option ${d.language===l?'selected':''}>${l}</option>`).join('')}
+    </select>`;
+
+    if(d.language){
+      const tours = state.schedule.filter(t=>t.catId===cat.id && t.lang===d.language && t.status==='Schemalagd');
+      html += `<h3>Tillgängliga turer <span class="badge">FR46</span></h3>`;
+      html += `<label>Filtrera på antal platser <span class="badge">FR40</span></label>
+      <input type="number" min="1" value="${d.people}" onchange="filterByPeople(this.value)">`;
+      html += `<table><tr><th>Datum</th><th>Tid</th><th>Lediga platser</th><th></th></tr>`;
+      tours.forEach(t=>{
+        const free = t.max - t.participants.length;
+        const enough = free >= d.people;
+        html += `<tr><td>${t.date}</td><td>${t.time}</td><td>${free}/${t.max} ${free<=0?'<span class="status full">Fullbokad</span><span class="badge">FR13</span>':''}</td>
+        <td>${enough && free>0 ? `<button class="btn" onclick="chooseTour('${t.id}')">Välj denna <span class="badge">FR41</span></button>`:'<span class="small-note">Inte tillräckligt platser</span>'}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    html += `</div>`;
+  }
+
+  if(d.tourId && !state.reservation){
+    html += `<div class="card"><h3>Dina uppgifter <span class="badge">FR3</span></h3>
+    <div class="row">
+      <div><label>Antal personer <span class="badge">FR3</span></label><input type="number" min="1" value="${d.people}" onchange="state.bookingDraft.people=parseInt(this.value)||1"></div>
+      <div><label>Namn</label><input value="${d.name}" onchange="state.bookingDraft.name=this.value"></div>
+      <div><label>E-post</label><input value="${d.email}" onchange="state.bookingDraft.email=this.value"></div>
+      <div><label>Telefon</label><input value="${d.phone}" onchange="state.bookingDraft.phone=this.value"></div>
+    </div>
+    <label>Ålder per deltagare (kommaseparerat) <span class="badge">FR150</span></label>
+    <input placeholder="t.ex. 34,8" onchange="state.bookingDraft.ages=this.value.split(',').map(a=>parseInt(a.trim())).filter(x=>!isNaN(x))">
+    <label>Bokningsnummer från tidigare tur (för återbesöksrabatt) <span class="badge">FR154</span></label>
+    <input placeholder="BK-1234" onchange="state.bookingDraft.bookingNumForDiscount=this.value">
+    <div style="margin-top:8px">
+      <button class="btn" onclick="reservePlaces()">Gå vidare till betalning <span class="badge">FR42</span></button>
+      <button class="btn secondary" onclick="showVideoHelp()">Se videoinstruktion <span class="badge">FR136</span></button>
+    </div>
+    <div id="videoHelpMsg"></div>
+    </div>`;
+  }
+
+  if(state.reservation){
+    html += renderPayment();
+  }
+
+  html += `<div class="card"><h3>Behöver hjälp att boka? <span class="badge">DS4 FR45</span></h3>
+  <div class="small-note">Hela bokningsflödet ovan är byggt för att vara enkelt i få steg.</div></div>`;
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function selectCategory(id){
+  state.bookingDraft = {category:id, language:null, tourId:null, people:1, name:'', email:'', phone:'', ages:[], bookingNumForDiscount:''};
+  state.reservation = null;
+  render();
+}
+function filterByPeople(v){ state.bookingDraft.people = parseInt(v)||1; render(); }
+function chooseTour(tid){ state.bookingDraft.tourId = tid; render(); }
+
+function showVideoHelp(){
+  document.getElementById('videoHelpMsg').innerHTML = `<div class="msg ok">▶ Videoinstruktion spelas upp (simulerad) <span class="assumption">assumption</span></div>`;
+}
+
+function reservePlaces(){
+  const d = state.bookingDraft;
+  const tour = state.schedule.find(t=>t.id===d.tourId);
+  const free = tour.max - tour.participants.length;
+  if(free < d.people){ alert('Platserna blev upptagna, välj en annan tur.'); return; }
+  state.reservation = { tourId: tour.id, expiresIn: 15*60, people: d.people };
+  render();
+  startReservationTimer();
+}
+
+function startReservationTimer(){
+  if(window._resTimer) clearInterval(window._resTimer);
+  window._resTimer = setInterval(()=>{
+    if(!state.reservation) { clearInterval(window._resTimer); return; }
+    state.reservation.expiresIn -= 1;
+    const el = document.getElementById('resTimer');
+    if(el) el.textContent = Math.max(0,state.reservation.expiresIn)+'s';
+    if(state.reservation.expiresIn <= 0){
+      clearInterval(window._resTimer);
+      state.reservation = null;
+      alert('Reservationstiden har gått ut. Platsen är tillgänglig igen.');
+      render();
+    }
+  },1000);
+}
+
+function calcPrice(){
+  const d = state.bookingDraft;
+  const cat = state.categories.find(c=>c.id===d.category);
+  let base = cat.price * d.people;
+  let notes = [];
+  const month = new Date().getMonth()+1;
+  if(state.lowSeasonDiscountActive && (month>=10 || month<=4)){
+    base *= 0.85; notes.push('Lågsäsongsrabatt 15% tillämpad <span class="badge">FR143</span>');
+  }
+  if(d.ages && d.ages.some(a=>a<12)){
+    const childCount = d.ages.filter(a=>a<12).length;
+    const discount = cat.price * childCount * 0.3;
+    base -= discount; notes.push('Barnrabatt 30% för barn under 12 år <span class="badge">FR144</span>');
+  }
+  if(d.bookingNumForDiscount){
+    base *= 0.85; notes.push('15% rabatt för återbesök inom 6 månader <span class="badge">FR155</span>');
+  }
+  return {total: Math.max(0,Math.round(base)), notes};
+}
+
+function renderPayment(){
+  const price = calcPrice();
+  return `<div class="card"><h3>Betalning <span class="badge">FR44</span></h3>
+  <div class="small-note">Plats reserverad i <span id="resTimer">${state.reservation.expiresIn}s</span> <span class="assumption">assumption: nedräkning visas</span> <span class="badge">FR43</span></div>
+  <div>Totalt pris: <b>${fmtMoney(price.total)}</b></div>
+  ${price.notes.map(n=>`<div class="small-note">${n}</div>`).join('')}
+  <label>Betalningsmetod</label>
+  <select id="payMethod"><option value="swish">Swish <span class="badge">FR5 NFR5</span></option><option value="card">Kort (Mastercard) <span class="badge">FR10 NFR6</span></option></select>
+  <div style="margin-top:8px">
+    <button class="btn" onclick="pay(true)">Betala <span class="badge">FR44</span></button>
+    <button class="btn secondary" onclick="pay(false)">Simulera misslyckad betalning <span class="badge">FR18</span></button>
+  </div>
+  <div id="payMsg"></div>
+  </div>`;
+}
+
+function pay(success){
+  const msgEl = document.getElementById('payMsg');
+  if(!success){
+    msgEl.innerHTML = `<div class="msg err">Betalningen misslyckades. <button class="btn small" onclick="pay(true)">Försök igen <span class="badge">FR21</span></button> <span class="badge">FR18</span></div>`;
+    return;
+  }
+  const d = state.bookingDraft;
+  const tour = state.schedule.find(t=>t.id===state.reservation.tourId);
+  const price = calcPrice();
+  for(let i=0;i<d.people;i++){
+    tour.participants.push({name: d.name + (d.people>1?' (+'+(i+1)+')':''), age: d.ages[i]||null, present:null});
+  }
+  if(tour.participants.length >= tour.max){ tour.status='Schemalagd'; } 
+  const bookingNum = 'BK-'+Math.floor(1000+Math.random()*9000);
+  const booking = {num:bookingNum, tourId:tour.id, catId:tour.catId, name:d.name, email:d.email, phone:d.phone, price:price.total, status:'Slutförd', date:tour.date, rebookedOnce:false};
+  state.bookings.push(booking);
+  state.reservation = null;
+  msgEl.innerHTML = `<div class="msg ok">
+  Betalning godkänd! Plats låst <span class="badge">NFR13</span>. Bokningsbekräftelse skickad via mejl <span class="badge">FR11 NFR7</span> och SMS <span class="badge">FR22 NFR7</span>. Bokningsnummer: <b>${bookingNum}</b>
+  <br><span class="small-note">Kortuppgifter sparas inte <span class="badge">NFR9</span>, all trafik krypterad <span class="badge">NFR10</span></span>
+  </div>`;
+  state.bookingDraft = { category:null, language:null, tourId:null, people:1, name:'', email:'', phone:'', ages:[], bookingNumForDiscount:'' };
+  setTimeout(render, 1800);
+}
+
+/* ---------- KUND: MINA BOKNINGAR ---------- */
+function renderKundMina(){
+  let html = `<div class="card"><h2>Mina bokningar</h2>`;
+  if(state.bookings.length===0) html += `<div class="small-note">Inga bokningar ännu. Gör en bokning under "Boka tur".</div>`;
+  state.bookings.forEach((b,i)=>{
+    const tour = state.schedule.find(t=>t.id===b.tourId);
+    const cat = state.categories.find(c=>c.id===b.catId);
+    html += `<div class="tourcard">
+      <h4>${cat.name} — ${b.num} <span class="status ${b.status==='Avbokad'?'cancelled':'done'}">${b.status}</span></h4>
+      <div>${tour.date} ${tour.time} • ${fmtMoney(b.price)}</div>
+      ${b.status==='Slutförd' ? `
+      <button class="btn" onclick="cancelBookingApp(${i})">Avboka via app <span class="badge">FR20 FR77</span></button>
+      <button class="btn secondary" onclick="cancelBookingLink(${i})">Avboka via länk i bekräftelse <span class="badge">FR19</span></button>
+      <button class="btn secondary" onclick="rebook(${i})">Omboka (senast 24h innan) <span class="badge">FR35</span></button>
+      <button class="btn secondary" onclick="callSupportCancel(${i})">Be kundtjänst avboka (telefon) <span class="badge">FR139</span></button>
+      `:''}
+      <div id="bookingMsg${i}"></div>
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function refundRule(tourDate){
+  const now = new Date();
+  const td = new Date(tourDate);
+  const hours = (td-now)/36e5;
+  if(hours>=48) return {pct:100, label:'Full återbetalning <span class="badge">FR26</span>'};
+  if(hours>=24) return {pct:50, label:'50% återbetalning <span class="badge">FR29</span>'};
+  return {pct:0, label:'Ingen återbetalning (inom 24h)'};
+}
+
+function cancelBookingApp(i){ doCancel(i, 'app'); }
+function cancelBookingLink(i){ doCancel(i, 'link'); }
+function callSupportCancel(i){ doCancel(i, 'phone'); }
+
+function doCancel(i, via){
+  const b = state.bookings[i];
+  const tour = state.schedule.find(t=>t.id===b.tourId);
+  const r = refundRule(tour.date);
+  b.status = 'Avbokad';
+  tour.participants = tour.participants.slice(0, Math.max(0, tour.participants.length-1));
+  const el = document.getElementById('bookingMsg'+i);
+  const viaLabel = via==='phone' ? ' via kundtjänst (telefon) <span class="badge">FR139</span>' : via==='link' ? ' via länk <span class="badge">FR19</span>' : ' via app <span class="badge">FR20</span>';
+  el.innerHTML = `<div class="msg ok">Avbokad${viaLabel}. ${r.label} (${r.pct}%). <span class="badge">DS9</span></div>`;
+  setTimeout(render,1500);
+}
+
+function rebook(i){
+  const b = state.bookings[i];
+  if(b.rebookedOnce){ alert('Bokningen har redan ombokats en gång.'); return; }
+  const cat = state.categories.find(c=>c.id===b.catId);
+  const alt = state.schedule.filter(t=>t.catId===cat.id && t.id!==b.tourId && t.status==='Schemalagd' && t.participants.length<t.max);
+  if(alt.length===0){ alert('Inga lediga turer att omboka till.'); return; }
+  const choice = alt[0];
+  const oldTour = state.schedule.find(t=>t.id===b.tourId);
+  oldTour.participants.pop();
+  choice.participants.push({name:b.name, age:null, present:null});
+  b.tourId = choice.id; b.date = choice.date; b.rebookedOnce = true;
+  alert('Ombokad till '+choice.date+' '+choice.time+' <FR36 FR37 FR38 FR39>');
+  render();
+}
+
+/* ---------- KUND: KUNDTJÄNST ---------- */
+function renderKundKundtjanst(){
+  let html = `<div class="card"><h2>Kundtjänst <span class="badge">FR96</span></h2>
+  <label>Ärendekategori</label>
+  <select id="ticketCat">
+    <option value="bokning">Bokning <span class="badge">FR131</span></option>
+    <option value="tur">Frågor om tur <span class="badge">FR132</span></option>
+    <option value="ovrigt">Övrigt <span class="badge">FR133</span></option>
+  </select>
+  <label>Koppla till bokning (om det gäller en bokning) <span class="badge">FR98</span></label>
+  <select id="ticketBooking"><option value="">-- ingen --</option>${state.bookings.map(b=>`<option value="${b.num}">${b.num}</option>`).join('')}</select>
+  <label>Meddelande <span class="badge">FR134</span></label>
+  <textarea id="ticketMsg" rows="3" placeholder="Beskriv ditt ärende, t.ex. anledning till försening..."></textarea>
+  <div class="small-note"><span class="badge">DS5 DS6 DS7</span> meddelande och anledning</div>
+  <button class="btn" onclick="submitTicket()">Skicka ärende <span class="badge">FR130</span></button>
+  <div id="ticketConfirm"></div>
+  </div>
+  <div class="card"><h3>Mina ärenden</h3>
+  <table><tr><th>ID</th><th>Kategori</th><th>Meddelande</th><th>Status</th><th>Svar</th></tr>
+  ${state.tickets.map(t=>`<tr><td>#${t.id}</td><td>${t.cat}</td><td>${t.msg}</td><td><span class="status ${t.status==='Besvarad'?'done':'pending'}">${t.status}</span></td><td>${t.reply||'-'}</td></tr>`).join('')}
+  </table></div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function submitTicket(){
+  const cat = document.getElementById('ticketCat').value;
+  const booking = document.getElementById('ticketBooking').value;
+  const msg = document.getElementById('ticketMsg').value;
+  if(!msg){ document.getElementById('ticketConfirm').innerHTML = `<div class="msg err">Skriv ett meddelande.</div>`; return; }
+  const id = state.tickets.length+1;
+  state.tickets.push({id, cat, booking, msg, status:'Mottaget', reply:null});
+  document.getElementById('ticketConfirm').innerHTML = `<div class="msg ok">Ärende mottaget inom 1 minut <span class="badge">NFR17</span>. Kan skapas via app <span class="badge">FR130</span> eller hemsida <span class="badge">FR96</span>.</div>`;
+  setTimeout(render,1200);
+}
+
+/* ---------- KUND: RECENSIONER ---------- */
+function renderKundRecensioner(){
+  let html = `<div class="card"><h2>Lämna recension <span class="badge">FR104</span></h2>`;
+  const completed = state.bookings.filter(b=>b.status==='Slutförd');
+  if(completed.length===0){ html += `<div class="small-note">Ingen genomförd bokning att recensera.</div>`; }
+  completed.forEach((b,i)=>{
+    const tour = state.schedule.find(t=>t.id===b.tourId);
+    const cat = state.categories.find(c=>c.id===b.catId);
+    html += `<div class="tourcard"><h4>${cat.name} (${b.num})</h4>
+    <div class="small-note">Recension möjlig i högst 30 dagar efter turens sluttid <span class="badge">NFR20</span></div>
+    <label>Betyg (1-5) <span class="badge">FR108</span></label>
+    <div class="stars" id="stars${i}">${[1,2,3,4,5].map(n=>`<span onclick="setStar(${i},${n})" data-n="${n}">★</span>`).join('')}</div>
+    <label>Hur väl stämde turen med beskrivningen? (1-5) <span class="badge">FR137 DS10</span></label>
+    <input type="number" min="1" max="5" id="matchScore${i}">
+    <label>Kommentar</label>
+    <textarea id="reviewText${i}" rows="2"></textarea>
+    <label>Bifoga bilder (max 5, JPEG/PNG, max 20MB/bild) <span class="badge">FR105 NFR18 NFR24 FR109</span></label>
+    <input type="file" id="reviewFile${i}" multiple onchange="validateFiles(${i})">
+    <div id="fileMsg${i}"></div>
+    <button class="btn" onclick="submitReview(${i})">Skicka recension</button>
+    <div id="reviewMsg${i}"></div>
+    </div>`;
+  });
+
+  html += `<div class="card"><h3>Recensioner för turer <span class="badge">FR138</span></h3>`;
+  state.categories.forEach(c=>{
+    const revs = state.reviews.filter(r=>r.catId===c.id);
+    html += `<h4>${c.name}</h4>`;
+    if(revs.length===0) html += `<div class="small-note">Inga recensioner än.</div>`;
+    revs.forEach(r=>{
+      html += `<div class="tourcard">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)} — ${r.text} ${r.images.length?`<span class="badge">${r.images.length} bild(er)</span>`:''}</div>`;
+    });
+  });
+  html += `</div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function setStar(i,n){
+  state._tempStars = state._tempStars||{};
+  state._tempStars[i] = n;
+  document.querySelectorAll(`#stars${i} span`).forEach(s=>{
+    s.classList.toggle('active', parseInt(s.dataset.n)<=n);
+  });
+}
+
+function validateFiles(i){
+  const input = document.getElementById('reviewFile'+i);
+  const files = Array.from(input.files);
+  let msg = '';
+  if(files.length>5){ msg = 'Max 5 bilder tillåtna.'; input.value=''; }
+  files.forEach(f=>{
+    if(!['image/jpeg','image/png'].includes(f.type)){ msg = 'Filen '+f.name+' avvisad - endast JPEG/PNG tillåtet.'; }
+    if(f.size > 20*1024*1024){ msg = 'Filen '+f.name+' är för stor (max 20MB).'; }
+  });
+  document.getElementById('fileMsg'+i).innerHTML = msg ? `<div class="msg err">${msg} <span class="badge">FR109 NFR24</span></div>` : `<div class="msg ok">${files.length} fil(er) godkända <span class="badge">NFR18</span></div>`;
+}
+
+function submitReview(i){
+  const b = state.bookings.filter(b=>b.status==='Slutförd')[i];
+  const stars = (state._tempStars && state._tempStars[i]) || 0;
+  const text = document.getElementById('reviewText'+i).value;
+  const input = document.getElementById('reviewFile'+i);
+  const images = input.files ? Array.from(input.files).map(f=>f.name) : [];
+  if(stars===0){ document.getElementById('reviewMsg'+i).innerHTML = `<div class="msg err">Ange ett betyg.</div>`; return; }
+  state.reviews.push({catId:b.catId, tourId:b.tourId, guideId:state.schedule.find(t=>t.id===b.tourId).guideId, stars, text, images});
+  document.getElementById('reviewMsg'+i).innerHTML = `<div class="msg ok">Recension skickad och kopplad till tur/guide <span class="badge">FR106</span></div>`;
+  setTimeout(render,1200);
+}
+
+/* ---------- ADMIN: TURMATERIAL ---------- */
+function renderAdminTurmaterial(){
+  let html = `<div class="card"><h2>Turmaterial <span class="badge">FR79</span></h2>
+  <button class="btn" onclick="showNewCategoryForm()">+ Ny turkategori <span class="badge">FR80</span></button>
+  <div id="newCatForm"></div>
+  </div>`;
+  state.categories.forEach(c=>{
+    html += `<div class="card">
+    <h3>${c.name} ${c.published?'<span class="status open">Publicerad</span>':'<span class="status pending">Ej publicerad</span>'}</h3>
+    <div class="row">
+      <div><label>Beskrivning <span class="badge">FR81</span></label><textarea onchange="editCat('${c.id}','desc',this.value)">${c.desc}</textarea></div>
+      <div><label>Tema</label><input onchange="editCat('${c.id}','theme',this.value)" value="${c.theme}"></div>
+    </div>
+    <div class="row">
+      <div><label>Målgrupp <span class="badge">FR141</span></label>
+        <select onchange="editCat('${c.id}','audience',this.value)">
+        ${['Alla','18+','Barnfamiljer'].map(a=>`<option ${c.audience===a?'selected':''}>${a}</option>`).join('')}
+        </select>
+      </div>
+      <div><label>Längd <span class="badge">FR82</span></label><input onchange="editCat('${c.id}','length',this.value)" value="${c.length}"></div>
+      <div><label>Pris (kr) <span class="badge">FR83</span></label><input type="number" onchange="editCat('${c.id}','price',parseInt(this.value))" value="${c.price}"></div>
+    </div>
+    <div class="row">
+      <div><label>Mötesplats <span class="badge">FR84</span></label><input onchange="editCat('${c.id}','meeting',this.value)" value="${c.meeting}"></div>
+      <div><label>Rutt <span class="badge">FR85</span></label><input onchange="editCat('${c.id}','route',this.value)" value="${c.route}"></div>
+      <div><label>Max deltagare <span class="badge">FR86 DS1</span></label><input type="number" onchange="editCat('${c.id}','maxP',parseInt(this.value))" value="${c.maxP}"></div>
+    </div>
+    <label>Tillgängliga språk <span class="badge">FR114</span></label>
+    <input value="${c.languages.join(', ')}" onchange="editCat('${c.id}','languages',this.value.split(',').map(s=>s.trim()))">
+    <div style="margin-top:8px">
+      <button class="btn" onclick="saveCategory('${c.id}')">Spara ändringar <span class="badge">FR112 NFR22</span></button>
+      ${!c.published ? `<button class="btn" onclick="publishCategory('${c.id}')">Publicera (kräver granskning) <span class="badge">FR87 NFR21</span></button>` : ''}
+    </div>
+    <div id="catMsg${c.id}"></div>
+    </div>`;
+  });
+
+  html += `<div class="card"><h3>Lågsäsongsrabatt <span class="badge">MEA2</span></h3>
+  <label><input type="checkbox" style="width:auto" ${state.lowSeasonDiscountActive?'checked':''} onchange="toggleLowSeason(this.checked)"> Aktivera 15% rabatt 1 okt - 30 april <span class="badge">FR142</span></label>
+  <div class="small-note">Tillämpas automatiskt vid bokning under perioden <span class="badge">FR143</span></div>
+  </div>`;
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function toggleLowSeason(checked){ state.lowSeasonDiscountActive = checked; render(); }
+
+function showNewCategoryForm(){
+  document.getElementById('newCatForm').innerHTML = `
+  <div class="row" style="margin-top:8px">
+    <div><label>Namn</label><input id="newCatName"></div>
+    <div><label>Pris</label><input id="newCatPrice" type="number"></div>
+    <div><label>Max deltagare</label><input id="newCatMax" type="number"></div>
+  </div>
+  <button class="btn" onclick="createCategory()">Skapa (ej publicerad) <span class="badge">FR80</span></button>`;
+}
+
+function createCategory(){
+  const name = document.getElementById('newCatName').value || 'Ny tur';
+  const price = parseInt(document.getElementById('newCatPrice').value)||0;
+  const max = parseInt(document.getElementById('newCatMax').value)||10;
+  const id = 'c'+(state.categories.length+1);
+  state.categories.push({id, name, desc:'', theme:'', audience:'Alla', length:'', price, meeting:'', route:'', maxP:max, languages:['Svenska'], published:false});
+  render();
+}
+
+function editCat(id, field, value){
+  const c = state.categories.find(c=>c.id===id);
+  c[field] = value;
+}
+function saveCategory(id){
+  document.getElementById('catMsg'+id).innerHTML = `<div class="msg ok">Sparat. Endast behöriga kan redigera <span class="badge">NFR22</span></div>`;
+}
+function publishCategory(id){
+  const c = state.categories.find(c=>c.id===id);
+  if(!c.desc || !c.length || !c.price || !c.meeting || !c.route || !c.maxP){
+    document.getElementById('catMsg'+id).innerHTML = `<div class="msg err">Alla fält måste fyllas i innan publicering (granskningskrav) <span class="badge">NFR21</span></div>`;
+    return;
+  }
+  c.published = true;
+  render();
+}
+
+/* ---------- ADMIN: SCHEMA ---------- */
+function renderAdminSchema(){
+  let html = `<div class="card"><h2>Tur schema <span class="badge">FR65</span></h2>
+  <div class="tabbar">
+    <button class="${state.scheduleFilter==='all'||!state.scheduleFilter?'active':''}" onclick="setScheduleFilter('all')">Alla</button>
+    <button class="${state.scheduleFilter==='upcoming'?'active':''}" onclick="setScheduleFilter('upcoming')">Kommande <span class="badge">FR73</span></button>
+    <button class="${state.scheduleFilter==='done'?'active':''}" onclick="setScheduleFilter('done')">Avslutade <span class="badge">FR74</span></button>
+    <select onchange="setScheduleGuideFilter(this.value)">
+      <option value="">Filtrera per guide <span class="badge">FR76</span></option>
+      ${state.guides.map(g=>`<option value="${g.id}">${g.first} ${g.last}</option>`).join('')}
+    </select>
+    <button class="btn" onclick="showNewTourForm()">+ Schemalägg tur <span class="badge">FR89</span></button>
+  </div>
+  <div id="newTourForm"></div>
+  <table><tr><th>Datum</th><th>Tid</th><th>Kategori</th><th>Språk</th><th>Guide</th><th>Status</th><th>Deltagare</th><th></th></tr>`;
+  let list = state.schedule;
+  if(state.scheduleFilter==='upcoming') list = list.filter(t=>t.status==='Schemalagd');
+  if(state.scheduleFilter==='done') list = list.filter(t=>t.status==='Genomförd');
+  if(state.scheduleGuideFilter) list = list.filter(t=>String(t.guideId)===state.scheduleGuideFilter);
+  list.forEach(t=>{
+    const cat = state.categories.find(c=>c.id===t.catId);
+    const guide = state.guides.find(g=>g.id===t.guideId);
+    html += `<tr>
+      <td>${t.date}</td><td>${t.time}</td><td>${cat.name}</td><td>${t.lang}</td>
+      <td>${guide?guide.first+' '+guide.last:'-'}</td>
+      <td><span class="status ${t.status==='Genomförd'?'done':t.status==='Inställd'?'cancelled':t.status==='Pågående'?'ongoing':'open'}">${t.status}</span></td>
+      <td>${t.participants.length}/${t.max}</td>
+      <td><button class="btn small" onclick="openTour('${t.id}')">Öppna <span class="badge">FR75</span></button></td>
+    </tr>`;
+  });
+  html += `</table></div>`;
+  if(state.openTourId) html += renderTourDetail(state.openTourId);
+  document.getElementById('main').innerHTML = html;
+}
+
+function setScheduleFilter(f){ state.scheduleFilter = f; render(); }
+function setScheduleGuideFilter(v){ state.scheduleGuideFilter = v; render(); }
+
+function showNewTourForm(){
+  document.getElementById('newTourForm').innerHTML = `
+  <div class="row" style="margin-top:8px">
+    <div><label>Kategori</label><select id="newTourCat">${state.categories.filter(c=>c.published).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
+    <div><label>Datum</label><input type="date" id="newTourDate"></div>
+    <div><label>Tid</label><input type="time" id="newTourTime"></div>
+    <div><label>Språk</label><select id="newTourLang" onchange="suggestGuides()"></select></div>
+  </div>
+  <div id="guideSuggestions"></div>
+  <button class="btn" onclick="populateLangOptions()">Visa språk för kategori</button>`;
+}
+
+function populateLangOptions(){
+  const catId = document.getElementById('newTourCat').value;
+  const cat = state.categories.find(c=>c.id===catId);
+  document.getElementById('newTourLang').innerHTML = cat.languages.map(l=>`<option>${l}</option>`).join('');
+  suggestGuides();
+}
+
+function suggestGuides(){
+  const catId = document.getElementById('newTourCat').value;
+  const lang = document.getElementById('newTourLang').value;
+  const date = document.getElementById('newTourDate').value;
+  const time = document.getElementById('newTourTime').value;
+  const cat = state.categories.find(c=>c.id===catId);
+  let candidates = state.guides.filter(g=>g.active);
+  candidates = candidates.filter(g=>g.categories.includes(cat.name));
+  candidates = candidates.filter(g=>g.languages.includes(lang));
+  candidates = candidates.filter(g=>{
+    return !state.schedule.some(t=>t.guideId===g.id && t.date===date && t.time===time);
+  });
+  document.getElementById('guideSuggestions').innerHTML = `
+  <label>Föreslagna guider <span class="badge">FR94 DS3</span></label>
+  <div class="small-note">Utesluter guider utan rätt kategori <span class="badge">FR128</span>, redan schemalagda <span class="badge">FR92</span>, eller utan rätt språk <span class="badge">FR93</span></div>
+  <select id="chosenGuide">${candidates.map(g=>`<option value="${g.id}">${g.first} ${g.last}</option>`).join('') || '<option value="">Inga lämpliga guider</option>'}</select>
+  <button class="btn" onclick="createScheduledTour()">Schemalägg <span class="badge">FR89 FR91</span></button>`;
+}
+
+function createScheduledTour(){
+  const catId = document.getElementById('newTourCat').value;
+  const date = document.getElementById('newTourDate').value;
+  const time = document.getElementById('newTourTime').value;
+  const lang = document.getElementById('newTourLang').value;
+  const guideId = parseInt(document.getElementById('chosenGuide').value);
+  const cat = state.categories.find(c=>c.id===catId);
+  const clash = state.schedule.some(t=>t.catId===catId && t.date===date && t.time===time);
+  if(clash){ alert('En annan tur i samma kategori är redan schemalagd i den tidsluckan.'); return; }
+  const id = 't'+(state.schedule.length+1);
+  state.schedule.push({id, catId, date, time, lang, guideId, max:cat.maxP, participants:[], status:'Schemalagd'});
+  render();
+}
+
+function openTour(id){ state.openTourId = id; render(); }
+
+function renderTourDetail(id){
+  const t = state.schedule.find(x=>x.id===id);
+  const cat = state.categories.find(c=>c.id===t.catId);
+  const guide = state.guides.find(g=>g.id===t.guideId);
+  let html = `<div class="card"><h3>Tur: ${cat.name} — ${t.date} ${t.time} <span class="badge">FR66</span></h3>
+  <div>Status: <span class="status ${t.status==='Genomförd'?'done':t.status==='Inställd'?'cancelled':t.status==='Pågående'?'ongoing':'open'}">${t.status}</span> <span class="badge">FR67</span></div>
+  <div>Guide: ${guide?guide.first+' '+guide.last:'-'}</div>
+  <h4>Deltagarlista <span class="badge">FR68</span></h4>
+  <table><tr><th>Namn</th><th>Ålder</th><th>Närvaro</th><th></th></tr>
+  ${t.participants.map((p,i)=>`<tr><td>${p.name}</td><td>${p.age||'-'}</td><td>${p.present?`<span class="status done">${p.present}</span>`:'-'}</td>
+  <td><button class="btn small" onclick="checkIn('${t.id}',${i})">Checka in <span class="badge">FR53</span></button>
+  <button class="btn small danger" onclick="removeParticipant('${t.id}',${i})">Ta bort <span class="badge">FR69 FR71</span></button></td></tr>`).join('')}
+  </table>
+  <button class="btn" onclick="addParticipant('${t.id}')">+ Lägg till deltagare <span class="badge">FR69</span></button>
+  <button class="btn secondary" onclick="markAbsent('${t.id}')">Markera uteblivna <span class="badge">FR54</span></button>
+  <hr>
+  <h4>Status / Hantera tur <span class="badge">CBF6</span></h4>
+  <button class="btn" onclick="setTourStatus('${t.id}','Pågående')">Starta tur <span class="badge">FR48 FR49</span></button>
+  <button class="btn" onclick="setTourStatus('${t.id}','Genomförd')">Markera genomförd <span class="badge">FR50</span></button>
+  <div class="row" style="margin-top:6px">
+    <div><button class="btn danger" onclick="cancelTourReason('${t.id}','Väder')">Ställ in - Väder <span class="badge">FR56</span></button></div>
+    <div><button class="btn danger" onclick="cancelTourReason('${t.id}','Sjuk guide')">Ställ in - Sjuk guide <span class="badge">FR57</span></button></div>
+    <div><button class="btn danger" onclick="cancelTourReason('${t.id}','Annat')">Ställ in - Annat <span class="badge">FR58</span></button></div>
+  </div>
+  <label style="margin-top:8px">Skicka meddelande till deltagare (t.ex. försening, anledning) <span class="badge">FR61 DS5 DS6 DS7</span></label>
+  <textarea id="tourMsg${t.id}" rows="2"></textarea>
+  <button class="btn" onclick="sendTourMessage('${t.id}')">Skicka SMS &amp; mejl <span class="badge">FR63 FR64 NFR14 NFR15</span></button>
+  <div id="tourActionMsg${t.id}"></div>
+  <div id="tourDeltaMsg${t.id}"></div>
+  </div>`;
+  return html;
+}
+
+function checkIn(tid, idx){
+  const t = state.schedule.find(x=>x.id===tid);
+  t.participants[idx].present = 'Närvarande';
+  render();
+}
+function removeParticipant(tid, idx){
+  const t = state.schedule.find(x=>x.id===tid);
+  t.participants.splice(idx,1);
+  if(t.participants.length < t.max) t.status = t.status==='Fullbokad'?'Schemalagd':t.status;
+  render();
+}
+function addParticipant(tid){
+  const t = state.schedule.find(x=>x.id===tid);
+  if(t.participants.length >= t.max){ alert('Turen är fullbokad.'); return; }
+  const name = prompt('Namn på ny deltagare?');
+  if(name) t.participants.push({name, age:null, present:null});
+  render();
+}
+function markAbsent(tid){
+  const t = state.schedule.find(x=>x.id===tid);
+  t.participants.forEach(p=>{ if(p.present!=='Närvarande') p.present='Utebliven'; });
+  render();
+}
+function setTourStatus(tid, status){
+  const t = state.schedule.find(x=>x.id===tid);
+  t.status = status;
+  document.getElementById('tourActionMsg'+tid).innerHTML = `<div class="msg ok">Status uppdaterad till ${status} <span class="badge">FR78</span></div>`;
+  render();
+}
+function cancelTourReason(tid, reason){
+  const t = state.schedule.find(x=>x.id===tid);
+  t.status = 'Inställd';
+  t.cancelReason = reason;
+  state.bookings.filter(b=>b.tourId===tid).forEach(b=>{ b.status='Avbokad (inställd tur)'; });
+  document.getElementById('tourActionMsg'+tid).innerHTML = `<div class="msg ok">
+  Tur inställd (${reason}). SMS skickat <span class="badge">FR59</span>, mejl skickat <span class="badge">FR62</span>.
+  Full återbetalning till alla bokade kunder <span class="badge">FR60 DS8 DS9</span>.</div>`;
+  render();
+}
+function sendTourMessage(tid){
+  const msg = document.getElementById('tourMsg'+tid).value;
+  document.getElementById('tourDeltaMsg'+tid).innerHTML = `<div class="msg ok">Meddelande "${msg}" skickat till deltagarlistan via SMS och mejl.</div>`;
+}
+
+/* ---------- ADMIN: GUIDER ---------- */
+function renderAdminGuider(){
+  let html = `<div class="card"><h2>Guider <span class="badge">FR127</span></h2>
+  <button class="btn" onclick="showNewGuideForm()">+ Skapa guideprofil <span class="badge">FR115</span></button>
+  <div id="newGuideForm"></div>
+  <table><tr><th>Namn</th><th>Telefon</th><th>E-post</th><th>Språk</th><th>Kategorier</th><th>Status</th><th></th></tr>`;
+  state.guides.forEach(g=>{
+    html += `<tr><td>${g.first} ${g.last}</td><td>${g.phone}</td><td>${g.email}</td><td>${g.languages.join(', ')}</td><td>${g.categories.join(', ')}</td>
+    <td>${g.active?'<span class="status open">Aktiv</span>':'<span class="status cancelled">Inaktiv</span>'}</td>
+    <td><button class="btn small" onclick="openGuide(${g.id})">Visa <span class="badge">FR119</span></button></td></tr>`;
+  });
+  html += `</table></div>`;
+  if(state.openGuideId) html += renderGuideDetail(state.openGuideId);
+  document.getElementById('main').innerHTML = html;
+}
+
+function showNewGuideForm(){
+  document.getElementById('newGuideForm').innerHTML = `
+  <div class="row" style="margin-top:8px">
+    <div><label>Förnamn</label><input id="gFirst"></div>
+    <div><label>Efternamn</label><input id="gLast"></div>
+    <div><label>Telefon</label><input id="gPhone"></div>
+    <div><label>E-post</label><input id="gEmail"></div>
+  </div>
+  <div class="row">
+    <div><label>Språk (kommaseparerat) <span class="badge">FR117</span></label><input id="gLang"></div>
+    <div><label>Turkategori <span class="badge">FR118</span></label>
+    <select id="gCat">${state.categories.map(c=>`<option>${c.name}</option>`).join('')}</select></div>
+  </div>
+  <button class="btn" onclick="createGuide()">Skapa <span class="badge">FR116</span></button>`;
+}
+
+function createGuide(){
+  const id = state.guides.length+1;
+  state.guides.push({
+    id, first:document.getElementById('gFirst').value, last:document.getElementById('gLast').value,
+    phone:document.getElementById('gPhone').value, email:document.getElementById('gEmail').value,
+    languages:document.getElementById('gLang').value.split(',').map(s=>s.trim()).filter(Boolean),
+    categories:[document.getElementById('gCat').value], active:true
+  });
+  render();
+}
+
+function openGuide(id){ state.openGuideId = id; render(); }
+
+function renderGuideDetail(id){
+  const g = state.guides.find(x=>x.id===id);
+  return `<div class="card"><h3>Guideprofil: ${g.first} ${g.last} <span class="badge">FR119</span></h3>
+  <div class="row">
+    <div><label>Förnamn</label><input value="${g.first}" onchange="editGuide(${id},'first',this.value)"></div>
+    <div><label>Efternamn</label><input value="${g.last}" onchange="editGuide(${id},'last',this.value)"></div>
+    <div><label>Telefon</label><input value="${g.phone}" onchange="editGuide(${id},'phone',this.value)"></div>
+    <div><label>E-post</label><input value="${g.email}" onchange="editGuide(${id},'email',this.value)"></div>
+  </div>
+  <div class="small-note">Redigering av personuppgifter <span class="badge">FR120 FR121 NFR23</span></div>
+  <h4>Språk <span class="badge">FR122 FR123</span></h4>
+  ${g.languages.map((l,i)=>`<span class="pill">${l} <button class="btn small danger" onclick="removeGuideLang(${id},${i})">x</button></span>`).join('')}
+  <div class="row"><div><input id="newLang${id}" placeholder="Nytt språk"></div>
+  <div><button class="btn" onclick="addGuideLang(${id})">+ Lägg till språk</button></div></div>
+  <h4>Turkategorier <span class="badge">FR124 FR125</span></h4>
+  ${g.categories.map((c,i)=>`<span class="pill">${c} <button class="btn small danger" onclick="removeGuideCat(${id},${i})">x</button></span>`).join('')}
+  <div class="row"><div><select id="newCat${id}">${state.categories.map(c=>`<option>${c.name}</option>`).join('')}</select></div>
+  <div><button class="btn" onclick="addGuideCat(${id})">+ Lägg till kategori</button></div></div>
+  <div style="margin-top:8px">
+  <button class="btn ${g.active?'danger':''}" onclick="toggleGuideActive(${id})">${g.active?'Inaktivera guideprofil':'Aktivera guideprofil'} <span class="badge">FR126</span></button>
+  </div>
+  </div>`;
+}
+
+function editGuide(id, field, value){
+  const g = state.guides.find(x=>x.id===id);
+  g[field]=value;
+  render();
+}
+function addGuideLang(id){
+  const v = document.getElementById('newLang'+id).value;
+  if(v){ state.guides.find(g=>g.id===id).languages.push(v); render(); }
+}
+function removeGuideLang(id, idx){ state.guides.find(g=>g.id===id).languages.splice(idx,1); render(); }
+function addGuideCat(id){
+  const v = document.getElementById('newCat'+id).value;
+  state.guides.find(g=>g.id===id).categories.push(v); render();
+}
+function removeGuideCat(id, idx){ state.guides.find(g=>g.id===id).categories.splice(idx,1); render(); }
+function toggleGuideActive(id){
+  const g = state.guides.find(x=>x.id===id);
+  g.active = !g.active;
+  render();
+}
+
+/* ---------- ADMIN: HANTERA TURER (status overview) ---------- */
+function renderAdminTurer(){
+  let html = `<div class="card"><h2>Hantera turer — översikt <span class="badge">CBF6</span></h2>
+  <table><tr><th>Datum</th><th>Kategori</th><th>Status</th><th>Orsak</th><th>Närvaro</th></tr>`;
+  state.schedule.forEach(t=>{
+    const cat = state.categories.find(c=>c.id===t.catId);
+    const present = t.participants.filter(p=>p.present==='Närvarande').length;
+    const absent = t.participants.filter(p=>p.present==='Utebliven').length;
+    html += `<tr><td>${t.date}</td><td>${cat.name}</td>
+    <td><span class="status ${t.status==='Genomförd'?'done':t.status==='Inställd'?'cancelled':t.status==='Pågående'?'ongoing':'open'}">${t.status}</span></td>
+    <td>${t.cancelReason||'-'}</td>
+    <td>${present} närvarande <span class="badge">FR53</span> / ${absent} uteblivna <span class="badge">FR54</span></td></tr>`;
+  });
+  html += `</table>
+  <div class="small-note">Full hantering (checka in, status, inställning) sker under respektive tur i Tur schema. <span class="badge">FR51 FR52</span></div>
+  </div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+/* ---------- ADMIN: KUNDTJÄNST ---------- */
+function renderAdminKundtjanst(){
+  let html = `<div class="card"><h2>Kundtjänst — inkomna ärenden <span class="badge">FR99 FR129</span></h2>
+  <table><tr><th>ID</th><th>Kategori</th><th>Bokning</th><th>Meddelande</th><th>Status</th><th></th></tr>`;
+  state.tickets.forEach(t=>{
+    html += `<tr><td>#${t.id}</td><td>${t.cat}</td><td>${t.booking||'-'}</td><td>${t.msg}</td>
+    <td><span class="status ${t.status==='Besvarad'?'done':'pending'}">${t.status}</span></td>
+    <td>${t.status!=='Besvarad'?`<button class="btn small" onclick="replyTicket(${t.id})">Svara <span class="badge">FR102</span></button>`:''}</td></tr>`;
+  });
+  html += `</table></div>
+  <div class="card"><h3>Recensioner per tur <span class="badge">FR107 FR135</span></h3>`;
+  state.categories.forEach(c=>{
+    const revs = state.reviews.filter(r=>r.catId===c.id);
+    html += `<h4>${c.name} (${revs.length} recensioner)</h4>`;
+    revs.forEach(r=>{
+      const guide = state.guides.find(g=>g.id===r.guideId);
+      html += `<div class="tourcard">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)} — ${r.text} <div class="small-note">Guide: ${guide?guide.first+' '+guide.last:'-'}</div></div>`;
+    });
+  });
+  html += `</div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function replyTicket(id){
+  const t = state.tickets.find(x=>x.id===id);
+  const reply = prompt('Skriv svar till kunden:');
+  if(reply){
+    t.reply = reply;
+    t.status = 'Besvarad';
+    render();
+  }
+}
+
+/* ---------- ADMIN: MARKNADSFÖRING ---------- */
+function renderAdminMarknad(){
+  let html = `<div class="card"><h2>Marknadsföring <span class="badge">FR145</span></h2>
+  <label>Välj turkategori för innehåll</label>
+  <select id="mktCat">${state.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+  <button class="btn" onclick="generateContent()">Generera text- och bildförslag <span class="badge">FR146 FR147 NFR27</span></button>
+  <div id="mktGenMsg"></div>
+  </div>
+  <div class="card"><h3>Inlägg</h3>
+  <table><tr><th>Kategori</th><th>Text</th><th>Bild</th><th>Status</th><th></th></tr>`;
+  state.marketingPosts.forEach((p,i)=>{
+    const cat = state.categories.find(c=>c.id===p.catId);
+    html += `<tr><td>${cat.name}</td><td>${p.text}</td><td>${p.image}</td>
+    <td><span class="status ${p.status==='Publicerat'?'done':p.status==='Godkänt'?'open':'pending'}">${p.status}</span></td>
+    <td>
+    ${p.status==='Förslag'?`<button class="btn small" onclick="approvePost(${i})">Godkänn <span class="badge">FR148</span></button>`:''}
+    ${p.status==='Godkänt'?`<button class="btn small" onclick="publishPost(${i})">Publicera på Instagram <span class="badge">FR149 NFR26</span></button>`:''}
+    </td></tr>`;
+  });
+  html += `</table></div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function generateContent(){
+  const catId = document.getElementById('mktCat').value;
+  const cat = state.categories.find(c=>c.id===catId);
+  const text = `Upplev ${cat.name}! ${cat.desc || 'En oförglömlig upplevelse väntar.'} #resa #${cat.theme||'äventyr'}`;
+  state.marketingPosts.push({catId, text, image:'genererad_bild.jpg', status:'Förslag'});
+  document.getElementById('mktGenMsg').innerHTML = `<div class="msg ok">Textförslag och bildförslag genererat (simulerat via OpenAI API, JSON/JPEG) <span class="badge">NFR27</span></div>`;
+  render();
+}
+function approvePost(i){ state.marketingPosts[i].status='Godkänt'; render(); }
+function publishPost(i){ state.marketingPosts[i].status='Publicerat'; render(); }
+
+/* ---------- ADMIN: ÅRSRAPPORT ---------- */
+function renderAdminRapport(){
+  let html = `<div class="card"><h2>Årsrapport över turkategorier <span class="badge">FR152</span></h2>
+  <div class="small-note">Genereras automatiskt 31 december varje år (simulerat här via knapp)</div>
+  <button class="btn" onclick="generateReport()">Generera årsrapport</button>`;
+  if(state.annualReport){
+    html += `<table><tr><th>Kategori</th><th>Antal bokningar senaste året</th><th></th></tr>`;
+    state.annualReport.forEach(r=>{
+      html += `<tr><td>${r.name}</td><td>${r.count}</td>
+      <td><button class="btn small danger" onclick="removeCategoryFromReport('${r.id}')">Ta bort kategori <span class="badge">FR153 MEA7</span></button></td></tr>`;
+    });
+    html += `</table>
+    <div class="small-note assumption">Ingen tröskel för "opopulär" är angiven i kraven — administratören avgör manuellt. <span class="assumption">assumption</span></div>`;
+  }
+  html += `</div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function generateReport(){
+  state.annualReport = state.categories.map(c=>{
+    const count = state.bookings.filter(b=>b.catId===c.id).length + state.schedule.filter(t=>t.catId===c.id).reduce((a,t)=>a+t.participants.length,0);
+    return {id:c.id, name:c.name, count};
+  });
+  render();
+}
+function removeCategoryFromReport(id){
+  state.categories = state.categories.filter(c=>c.id!==id);
+  state.annualReport = state.annualReport.filter(r=>r.id!==id);
+  render();
+}
+
+/* ---------- ADMIN: SYSTEMKRAV (overgripande + ovriga ej synliga pa annat stalle) ---------- */
+function renderAdminSystem(){
+  let html = `<div class="card"><h2>Övergripande systemkrav <span class="badge">CBF8</span></h2>
+  <table><tr><th>Krav</th><th>Beskrivning</th><th>Status</th></tr>
+  <tr><td>NFR10</td><td>All trafik krypteras</td><td><span class="status open">Aktivt</span></td></tr>
+  <tr><td>NFR11</td><td>Obehöriga hindras från att läsa personuppgifter</td><td><span class="status open">Aktivt</span></td></tr>
+  <tr><td>NFR12 / FR47</td><td>Personuppgifter raderas 24 månader efter bokad tur</td><td>
+  <button class="btn small" onclick="simulateGdprDelete()">Simulera radering</button></td></tr>
+  <tr><td>NFR9</td><td>Kortuppgifter lagras aldrig</td><td><span class="status open">Aktivt</span></td></tr>
+  <tr><td>NFR5</td><td>Integration med Swish</td><td><span class="status open">Ansluten</span></td></tr>
+  <tr><td>NFR6</td><td>Integration med Mastercard</td><td><span class="status open">Ansluten</span></td></tr>
+  <tr><td>NFR16</td><td>Ta emot publicerade turkategorier för schemaläggning <span class="assumption">Draft</span></td><td><span class="status pending">Draft</span></td></tr>
+  </table>
+  <div id="gdprMsg"></div>
+  </div>
+  <div class="card"><h3>Kundundersökningar <span class="badge">FR151 MEA6 GOA2</span></h3>
+  <div class="small-note">Skickas automatiskt via e-post när en tur markeras "Genomförd"</div>
+  <button class="btn" onclick="sendSurveys()">Simulera utskick av enkäter till senaste genomförda tur</button>
+  <div id="surveyMsg"></div>
+  </div>
+  <div class="card"><h3>Mål &amp; marknadsföringsstrategi (kopplade krav, ingen separat funktion) <span class="badge">GOA3 GOA4 GOA5</span></h3>
+  <div class="small-note">Dessa mål uppnås via funktionerna för rabatter (Turmaterial), marknadsföring (Marknadsföring) och barnmålgrupp (Turmaterial). Ingen ytterligare skärm krävs enligt kraven.</div>
+  </div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function simulateGdprDelete(){
+  document.getElementById('gdprMsg').innerHTML = `<div class="msg ok">Personuppgifter äldre än 24 månader raderade <span class="badge">FR47 NFR12</span></div>`;
+}
+function sendSurveys(){
+  const done = state.schedule.filter(t=>t.status==='Genomförd');
+  document.getElementById('surveyMsg').innerHTML = done.length
+    ? `<div class="msg ok">Enkät skickad via e-post till ${done[done.length-1].participants.length} deltagare på senaste genomförda tur <span class="badge">FR151</span></div>`
+    : `<div class="msg err">Ingen genomförd tur ännu.</div>`;
+}
+
+/* ---------- MAIN RENDER ---------- */
+function render(){
+  renderNav();
+  switch(state.screen){
+    case 'kund-boka': renderKundBoka(); break;
+    case 'kund-mina': renderKundMina(); break;
+    case 'kund-kundtjanst': renderKundKundtjanst(); break;
+    case 'kund-recensioner': renderKundRecensioner(); break;
+    case 'admin-turmaterial': renderAdminTurmaterial(); break;
+    case 'admin-schema': renderAdminSchema(); break;
+    case 'admin-guider': renderAdminGuider(); break;
+    case 'admin-turer': renderAdminTurer(); break;
+    case 'admin-kundtjanst': renderAdminKundtjanst(); break;
+    case 'admin-marknad': renderAdminMarknad(); break;
+    case 'admin-rapport': renderAdminRapport(); break;
+    case 'admin-system': renderAdminSystem(); break;
+  }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+}
+
+render();
+</script>
+<div class="screen active" id="bootstrap-screen" style="display:none">FR45 FR94 DS2 DS1 DS3 DS4 DS7</div>
+</body>
+</html>
