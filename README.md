@@ -3,11 +3,11 @@
 ## Repository Structure
 Repository contains following files:
 
-**Group36_example/** - A worked example of a requirements specification and feedback prototype from by student Group 36.
+**Group36_example** - A worked example of a requirements specification and feedback prototype from by student Group 36.
 
-**Group41_example/** -  A worked example of a requirements specification and feedback prototype from by student Group 41.
+**Group41_example** -  A worked example of a requirements specification and feedback prototype from by student Group 41.
 
-**Supplementary Materials/** - Contains the first and second design iterations of the Goal Models.
+**Supplementary Materials** - Contains the first and second design iterations of the Goal Models.
 
 **Prompt.txt** - Contains the prompt used for feedback prototype generation.
 
