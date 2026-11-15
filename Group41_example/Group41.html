@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>e-Lektronik Prototyp</title>
+<style>
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:#f3f5f7;color:#222}
+header{background:#1b2a4a;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav button{background:#28406e;color:#fff;border:none;padding:7px 11px;border-radius:4px;cursor:pointer;font-size:12px}
+nav button.active{background:#f2a33c;color:#1b2a4a;font-weight:bold}
+main{padding:16px;max-width:1300px;margin:0 auto}
+.screen{display:none}
+.screen.active{display:block}
+.card{background:#fff;border-radius:6px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);position:relative}
+.card h2{margin-top:0;font-size:16px;border-bottom:1px solid #eee;padding-bottom:6px}
+.badge{position:absolute;top:6px;right:8px;font-size:9px;background:#e5e9f0;color:#667;padding:1px 5px;border-radius:3px}
+.inlinebadge{font-size:9px;background:#e5e9f0;color:#667;padding:1px 5px;border-radius:3px;margin-left:4px}
+.assume{font-size:9px;background:#ffe3b0;color:#8a5a00;padding:1px 5px;border-radius:3px;margin-left:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid #e3e6ea;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f0f2f6}
+button.sm{font-size:12px;padding:4px 8px;border-radius:4px;border:1px solid #ccc;background:#f7f8fa;cursor:pointer;margin:1px}
+button.primary{background:#1b2a4a;color:#fff;border:none}
+button.danger{background:#c0392b;color:#fff;border:none}
+button.good{background:#2e7d32;color:#fff;border:none}
+input,select,textarea{padding:5px;border:1px solid #ccc;border-radius:4px;font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.col{flex:1;min-width:180px}
+.tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;color:#fff;margin-right:4px}
+.tag.open{background:#c0392b}.tag.pag{background:#e08e0b}.tag.lost{background:#2e7d32}
+.chatbox{border:1px solid #ddd;border-radius:6px;height:260px;overflow-y:auto;padding:8px;background:#fafbfc;margin-bottom:8px}
+.msg{margin:4px 0;padding:6px 10px;border-radius:8px;max-width:75%}
+.msg.user{background:#1b2a4a;color:#fff;margin-left:auto}
+.msg.bot{background:#e5e9f0}
+.productgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.pcard{background:#fff;border-radius:6px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:13px;position:relative}
+.pimg{width:100%;height:90px;background:#eee;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:30px;color:#aaa;margin-bottom:6px}
+.stars{color:#f2a33c}
+.small{font-size:11px;color:#777}
+.notice{background:#fff6e0;border:1px solid #f2d78a;padding:8px;border-radius:5px;font-size:12px;margin:8px 0}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi div{background:#eef1f6;padding:8px 12px;border-radius:6px;font-size:12px;min-width:140px}
+.kpi b{display:block;font-size:18px}
+footer.doc{background:#fff;padding:24px;margin-top:40px;border-top:4px solid #1b2a4a;font-size:13px;line-height:1.5}
+footer.doc h2{margin-top:0}
+footer.doc h3{margin-bottom:4px}
+.flagged{background:#ffecec}
+.archived{opacity:.5}
+.queuebar{height:10px;background:#eee;border-radius:5px;overflow:hidden;margin:4px 0}
+.queuebar div{height:100%;background:#1b2a4a}
+textarea{width:100%}
+.flexwrap{display:flex;flex-wrap:wrap;gap:6px}
+.lang-toggle{margin-left:auto}
+</style>
+</head>
+<body>
+<header>
+<h1>e-Lektronik – Systemprototyp</h1>
+<nav id="nav"></nav>
+<button class="sm lang-toggle" onclick="toggleLang()" id="langBtn">EN <span class="inlinebadge">NFR7</span></button>
+</header>
+<main id="main"></main>
+<footer class="doc">
+<h2>Vad kraven inte sa</h2>
+<h3>Chatbot &amp; support (FR1–FR20, FR122–FR150, NFR1–NFR4, NFR26–NFR34)</h3>
+<p>Det anges aldrig vilket språkmodell-API (FR2) som ska användas, vilka svarstider som gäller för chatboten vid hög belastning (bara NFR3 om 100 samtidiga), eller exakt hur "relevant svar" (FR2, FR5, FR19) avgörs — prototypen använder enkel nyckelordsmatchning som platshållare. Innehållet i återuppringningskön (FR122) och hur den prioriteras mot vanlig chattkö (FR7, FR8) är inte specificerat, så de hanteras som separata listor. Det står inte om kunden kan avboka en videokonsultation (FR11) eller ändra tid.</p>
+<h3>Försäljning &amp; sortiment (FR36–FR99, FR100–FR121)</h3>
+<p>Specialbeställningsflödet (FR102–FR106, FR73–FR82) beskrivs från två håll (CBF8 och CBF9) med delvis överlappande steg men utan att det klargörs om det är samma process eller två parallella — prototypen har slagit ihop dem till ett flöde. Vilka fält som krävs för en "tillgänglighetskontroll" utöver de fyra som listas i FR75 är oklart. Det anges inte vem som godkänner en inköpsorder innan FR68, eller vilka belopp som utlöser extra kontroll. Gränsen "5 gånger normal orderbelastning" (NFR27) saknar ett konkret ordertal att utgå från, så prototypen antar ett exempeltal och flaggar det som antagande.</p>
+<h3>Marknadsanalys (FR21–FR35, FR107, FR116–FR142)</h3>
+<p>Hur en marknadsanalysrapport (FR33) faktiskt vägs samman (vilka mått, vilken vikt per källa) är inte definierat — prototypen visar en sammanställning av redan insamlad exempeldata. Det står inte vilka fält en "konkurrent-anteckning" (FR139) eller "leverantör-anteckning" (FR140) ska ha utöver fritext.</p>
+<h3>GDPR och juridik (FR129, FR130, FR147–FR148, NFR6, NFR17, NFR29–NFR31)</h3>
+<p>Processen för att verifiera att den som begär utdrag/radering faktiskt är kontoinnehavaren beskrivs inte. Vad som händer med en pågående order om kunden begär radering (konflikt med NFR29/NFR17 om att spara underlag i flera år) är inte löst i kraven — prototypen visar båda och flaggar konflikten i gränssnittet.</p>
+<h3>Roller och behörighet (FR83)</h3>
+<p>Kraven namnger många olika stakeholder-roller (Säljare, Försäljningsansvarig, Sortimentsansvarig, Ekonomiansvarig, Lagerpersonal, IT-ansvarig m.fl.) men det finns ingen behörighetsmatris som säger vem som exakt får göra vad. Prototypen har en enkel rollväljare som grovt styr vilka knappar som är aktiva, som ett antagande.</p>
+<h3>Övrigt</h3>
+<p>"vara slut"-kategorin är en etikett utan egen beskriven funktion utöver det som redan täcks av FR97/FR125/FR126 — den har inte fått en egen skärm utan är taggad på de relaterade elementen. Flera krav (t.ex. FR100, FR101) är uttryckt på en mycket generell nivå ("rätt information till rätt individ") utan mätbart innehåll; de har representerats som en processöversikt snarare än som en specifik funktion, vilket är en tolkning.</p>
+</footer>
+<script>
+let lang='sv';
+function toggleLang(){lang=lang==='sv'?'en':'sv';document.getElementById('langBtn').innerHTML=(lang==='sv'?'EN':'SV')+' <span class="inlinebadge">NFR7</span>';render();}
+
+const screens=[
+{id:'support',label:'Kundsupport'},
+{id:'sales',label:'Försäljning'},
+{id:'catalog',label:'Sortiment'},
+{id:'purchase',label:'Inköp'},
+{id:'market',label:'Marknadsanalys'},
+{id:'special',label:'Specialbeställning'},
+{id:'gdpr',label:'GDPR'},
+{id:'admin',label:'Roller & Global'}
+];
+let active='support';
+function nav(id){active=id;render();}
+
+// ------- DATA -------
+let products=[
+{id:1,name:'UltraBook X1',cat:'Datorer',price:12990,stock:5,desc:'Kraftfull ultrabärbar dator.',img:true,archived:false,processor:'i7-1365U',ram:'16GB',storage:'512GB SSD',ratings:[5,4,4],reviews:[{user:'Anna',text:'Snabb och tyst.',verified:true,flagged:false,stars:5}]},
+{id:2,name:'SoundMax Pro',cat:'Hörlurar',price:1490,stock:0,desc:'Trådlösa brusreducerande hörlurar.',img:false,archived:false,battery:'30h',conn:'Bluetooth 5.3',ratings:[3,4],reviews:[{user:'Leo',text:'Bra ljud men kort batteritid än utlovat.',verified:false,flagged:true,stars:3}]},
+{id:3,name:'PhotoCam Z',cat:'Kameror',price:8990,stock:12,desc:'Systemkamera för avancerade fotografer.',img:true,archived:false,sensor:'APS-C',zoom:'5x',ratings:[5],reviews:[]},
+{id:4,name:'GameTower G2',cat:'Datorer',price:17990,stock:3,desc:'Stationär dator för gaming.',img:false,archived:true,processor:'Ryzen 9',ram:'32GB',storage:'1TB SSD',ratings:[4],reviews:[]}
+];
+let cart=[];
+let orders=[
+{id:'ORD-1001',customer:'Anna Svensson',status:'Skickad',date:'2024-05-01',items:['UltraBook X1'],cancelled:false,delayed:false},
+{id:'ORD-1002',customer:'Leo Berg',status:'Påbörjad',date:'2024-05-10',items:['SoundMax Pro'],cancelled:false,delayed:true}
+];
+let chatMessages=[{from:'bot',text:'Hej! Jag är e-Lektroniks assistent. Hur kan jag hjälpa dig?'}];
+let chatEscalated=false;
+let chatCustomerLoggedIn=false;
+let queue=[{name:'Kund A',wait:3},{name:'Kund B',wait:6}];
+let callbackQueue=[];
+let supportTickets=[
+{id:'T-01',customer:'Anna Svensson',desc:'Fråga om leverans',status:'open',created:'2024-05-01 10:00'},
+{id:'T-02',customer:'Leo Berg',desc:'Reklamation hörlurar',status:'pag',created:'2024-05-02 09:00',complaint:true}
+];
+let surveys=[{id:1,title:'Kundnöjdhet Q2',type:'skala',sent:false}];
+let complaints=[];
+let gdprRequests=[];
+let suppliers=[{name:'NordSupply AB',contact:'order@nordsupply.se',terms:'30 dagar netto',leadtime:'5 dagar'}];
+let purchaseOrders=[{id:'PO-01',supplier:'NordSupply AB',status:'Skickad',lines:[{product:'UltraBook X1',qty:10}]}];
+let stockLog=[{date:'2024-05-01',user:'Lager-1',change:'+10',reason:'Leverans PO-01'}];
+let specialRequests=[{id:'SR-1',customer:'Maria K',product:'Specialkamera Y',status:'Offert skickad',supplierCountry:'Japan',availability:'tillgänglig',price:15000,leadtime:'3 veckor',prepaid:false}];
+let competitors=[{name:'TechTrade',country:'DE',url:'techtrade.example'}];
+let influencers=[{name:'GadgetGuru',platforms:['Instagram','TikTok']}];
+let marketNotes=[];
+let marketReports=[{id:1,date:'2024-04-01'}];
+let campaigns=[];
+let roles=['Kundtjänstchef','Supportmedarbetare','Säljare','Sortimentsansvarig','Inköp','Marknadsföringsansvarig','Ekonomiansvarig','Lagerpersonal','IT-ansvarig','Dataskyddsombud','Kund'];
+let currentRole='Kund';
+
+function renderNav(){
+  document.getElementById('nav').innerHTML=screens.map(s=>
+   `<button class="${active===s.id?'active':''}" onclick="nav('${s.id}')">${s.label}</button>`).join('');
+}
+
+function esc(s){return (s+'').replace(/</g,'&lt;');}
+
+function render(){
+  renderNav();
+  const m=document.getElementById('main');
+  m.innerHTML='';
+  const fn={support:renderSupport,sales:renderSales,catalog:renderCatalog,purchase:renderPurchase,market:renderMarket,special:renderSpecial,gdpr:renderGdpr,admin:renderAdmin}[active];
+  const div=document.createElement('div');
+  div.className='screen active';
+  div.innerHTML=fn();
+  m.appendChild(div);
+  wire();
+}
+
+// ===================== SUPPORT =====================
+function renderSupport(){
+  return `
+  <div class="card"><h2>Chatbot <span class="badge">FR1 FR2 FR3 FR4 NFR3 NFR4 NFR7</span></h2>
+    <div class="row">
+      <div class="col">
+        <button class="sm ${chatCustomerLoggedIn?'good':''}" onclick="toggleCustLogin()">${chatCustomerLoggedIn?'Inloggad som kund ✓':'Logga in som kund'} <span class="inlinebadge">FR3</span></button>
+        <span class="small">Historik sparas per kund <span class="inlinebadge">FR4</span></span>
+      </div>
+    </div>
+    <div class="chatbox" id="chatbox">
+      ${chatMessages.map(c=>`<div class="msg ${c.from==='user'?'user':'bot'}">${esc(c.text)}</div>`).join('')}
+    </div>
+    <div class="row">
+      <input id="chatInput" class="col" placeholder="Skriv ett meddelande..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="sm primary" onclick="sendChat()">Skicka</button>
+      <button class="sm" onclick="requestHuman()">Be om medarbetare <span class="inlinebadge">FR123</span></button>
+      <button class="sm" onclick="takeOverChat()">Medarbetare tar över <span class="inlinebadge">FR6</span></button>
+      <button class="sm" onclick="endChatSurvey()">Avsluta chatt (betygsätt) <span class="inlinebadge">FR15</span></button>
+    </div>
+    <div class="notice">Chatt tillgänglig 09:00–17:00 vardagar <span class="inlinebadge">NFR2</span>. Utanför öppettid skapas ärende automatiskt och kund informeras om svar inom 48h <span class="inlinebadge">FR149 FR150 FR19 FR9 FR10 NFR1</span>.</div>
+    <div id="gdprInfoBox" style="display:none" class="notice">Vi sparar ditt namn, din e-post och din chatthistorik för att kunna ge support. Du kan begära utdrag eller radering när som helst. <span class="inlinebadge">FR147 NFR6</span></div>
+    <button class="sm" onclick="document.getElementById('gdprInfoBox').style.display='block'">Visa GDPR-info i chatt <span class="inlinebadge">FR147</span></button>
+    <button class="sm" onclick="alert('GDPR-info skickad till kundens mail.')">Skicka GDPR-info via mail <span class="inlinebadge">FR148 FR17</span></button>
+  </div>
+
+  <div class="card"><h2>Telefon- och chattkö <span class="badge">FR7 FR8 NFR26 FR122</span></h2>
+    <table><tr><th>Kund</th><th>Uppskattad väntetid (min)</th><th></th></tr>
+    ${queue.map((q,i)=>`<tr><td>${esc(q.name)}</td><td>
+      <div class="queuebar"><div style="width:${Math.min(100,q.wait*10)}%"></div></div>${q.wait} min</td>
+      <td><button class="sm" onclick="requestCallback(${i})">Bli uppringd istället <span class="inlinebadge">FR122</span></button></td></tr>`).join('')}
+    </table>
+    <p class="small">Mål: max 5 min kö för 90% under kampanjveckor <span class="inlinebadge">NFR26</span></p>
+    <h3 style="font-size:13px">Återuppringningskö</h3>
+    <table><tr><th>Kund</th></tr>${callbackQueue.map(c=>`<tr><td>${esc(c)}</td></tr>`).join('')||'<tr><td class="small">Tom</td></tr>'}</table>
+  </div>
+
+  <div class="card"><h2>Supportärenden <span class="badge">FR13 FR14 FR146 FR149</span></h2>
+    <table><tr><th>ID</th><th>Kund</th><th>Beskrivning</th><th>Status</th><th>Skapad</th><th>Åtgärd</th></tr>
+    ${supportTickets.map((t,i)=>`<tr class="${t.status==='open'?'flagged':''}"><td>${t.id}</td><td>${esc(t.customer)}</td><td>${esc(t.desc)}</td>
+      <td><span class="tag ${t.status==='open'?'open':t.status==='pag'?'pag':'lost'}">${t.status==='open'?'Öppet':t.status==='pag'?'Pågående':'Löst'}</span></td>
+      <td>${t.created}</td>
+      <td>
+      <select onchange="setTicketStatus(${i},this.value)">
+        <option value="open" ${t.status==='open'?'selected':''}>Öppet</option>
+        <option value="pag" ${t.status==='pag'?'selected':''}>Pågående</option>
+        <option value="lost" ${t.status==='lost'?'selected':''}>Löst</option>
+      </select>
+      </td></tr>`).join('')}
+    </table>
+    <button class="sm" onclick="addTicket()">+ Nytt ärende (utanför öppettid) <span class="inlinebadge">FR149</span></button>
+  </div>
+
+  <div class="card"><h2>Reklamationer <span class="badge">FR127 FR128 NFR28 NFR29 NFR30</span></h2>
+    <div class="row">
+      <input id="complName" placeholder="Kundnamn" class="col">
+      <input id="complDesc" placeholder="Beskrivning" class="col">
+      <button class="sm primary" onclick="addComplaint()">Registrera reklamation</button>
+    </div>
+    <table><tr><th>Kund</th><th>Beskrivning</th><th>Bekräftad</th><th>Svar inom 2 dagar</th></tr>
+    ${complaints.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.desc)}</td><td>${c.confirmed?'Ja ✓ <span class="inlinebadge">FR128</span>':'-'}</td><td><span class="small">Senast ${c.deadline} <span class="inlinebadge">NFR28</span></span></td></tr>`).join('')||'<tr><td colspan=4 class="small">Inga reklamationer ännu</td></tr>'}
+    </table>
+    <p class="small">Reklamationer och orderunderlag sparas i 3 år <span class="inlinebadge">NFR29 NFR30</span>. Reklamation hänvisas inte till butik – hanteras direkt här <span class="inlinebadge">DS15</span>.</p>
+  </div>
+
+  <div class="card"><h2>Kundundersökning efter ärende <span class="badge">FR145 FR146 NFR34 MEA10</span></h2>
+    <table><tr><th>Ärende</th><th>Status</th><th>Enkät</th></tr>
+      ${supportTickets.map(t=>`<tr><td>${t.id}</td><td>${t.status}</td><td>${t.status==='lost'?'Skickad automatiskt <span class="inlinebadge">FR145 NFR34</span>':'-'}</td></tr>`).join('')}
+    </table>
+  </div>
+  <div class="card"><h2>Videokonsultation <span class="badge">FR11 FR12 FR20</span></h2>
+    <button class="sm" onclick="bookConsultation()">Boka Teams-konsultation <span class="assume">antagande: Teams-länk simulerad</span></button>
+    <div id="bookConfirm"></div>
+  </div>
+  `;
+}
+function toggleCustLogin(){chatCustomerLoggedIn=!chatCustomerLoggedIn;render();}
+function sendChat(){
+  const inp=document.getElementById('chatInput');
+  if(!inp.value.trim())return;
+  chatMessages.push({from:'user',text:inp.value});
+  let txt=inp.value.toLowerCase();
+  let answer;
+  if(txt.includes('pris')||txt.includes('produkt')){answer='Enligt vår produktdatabas hittar jag information om det. (Svar genererat av språkmodell-API)';}
+  else {answer='Jag hittar tyvärr inget relevant svar på det. Vill du prata med en medarbetare?';chatEscalated=true;}
+  chatMessages.push({from:'bot',text:answer});
+  inp.value='';
+  render();
+}
+function requestHuman(){chatMessages.push({from:'bot',text:'Du kopplas nu till en medarbetare.'});render();}
+function takeOverChat(){chatMessages.push({from:'bot',text:'[Supportmedarbetare har tagit över konversationen]'});render();}
+function endChatSurvey(){chatMessages.push({from:'bot',text:'Hur nöjd var du med chatten? (1-5)'});render();}
+function requestCallback(i){callbackQueue.push(queue[i].name);queue.splice(i,1);render();}
+function setTicketStatus(i,val){supportTickets[i].status=val;render();}
+function addTicket(){supportTickets.push({id:'T-'+(supportTickets.length+10),customer:'Ny kund',desc:'Fråga utanför öppettid',status:'open',created:new Date().toLocaleString()});render();}
+function addComplaint(){
+  const n=document.getElementById('complName').value||'Okänd kund';
+  const d=document.getElementById('complDesc').value||'Ingen beskrivning';
+  complaints.push({name:n,desc:d,confirmed:true,deadline:'2 arbetsdagar'});
+  render();
+}
+function bookConsultation(){
+  document.getElementById('bookConfirm').innerHTML='<div class="notice">Bekräftelse skickad via mail: datum, tid och Teams-länk <span class="inlinebadge">FR12</span></div>';
+}
+
+// ===================== SALES =====================
+function renderSales(){
+  return `
+  <div class="card"><h2>Processöversikt försäljning <span class="badge">FR100 FR101</span> <span class="assume">tolkning</span></h2>
+    <p class="small">Rätt information styrs till rätt roll i varje steg: Kund → Säljare → Lager → Leveranspartner → Ekonomi.</p>
+    <div class="kpi">
+      <div>Öppna ordrar<b>${orders.filter(o=>!o.cancelled).length}</b></div>
+      <div>Försenade<b>${orders.filter(o=>o.delayed).length}</b></div>
+      <div>Varukorg<b>${cart.length}</b></div>
+    </div>
+  </div>
+
+  <div class="card"><h2>Produkter &amp; köp <span class="badge">FR86 FR87 FR92 NFR21 NFR22</span></h2>
+    <div class="productgrid">
+    ${products.filter(p=>!p.archived).map(p=>`
+      <div class="pcard">
+        <div class="pimg">${p.img?'🖼️':'❓ <span class="inlinebadge">FR112</span>'}</div>
+        <b>${esc(p.name)}</b> <span class="inlinebadge">FR38</span><br>
+        <span class="small">${esc(p.desc)}</span> <span class="inlinebadge">FR39</span><br>
+        <b>${p.price} kr</b> <span class="inlinebadge">FR40</span><br>
+        <span class="${p.stock===0?'tag open':''}">${p.stock>0?'I lager: '+p.stock:'Slut i lager'}</span> <span class="inlinebadge">FR41 vara slut</span><br>
+        <span class="stars">${'★'.repeat(Math.round(avg(p.ratings)))}${'☆'.repeat(5-Math.round(avg(p.ratings)))}</span> <span class="inlinebadge">FR55</span><br>
+        <button class="sm primary" ${p.stock===0?'disabled':''} onclick="addToCart(${p.id})">Lägg i varukorg</button>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card"><h2>Varukorg <span class="badge">FR92 FR93</span></h2>
+    <table><tr><th>Produkt</th><th>Pris</th><th></th></tr>
+    ${cart.map((c,i)=>`<tr><td>${esc(c.name)}</td><td>${c.price} kr</td><td><button class="sm danger" onclick="removeFromCart(${i})">Ta bort</button></td></tr>`).join('')||'<tr><td colspan=3 class="small">Tom varukorg</td></tr>'}
+    </table>
+    <button class="sm good" ${cart.length===0?'disabled':''} onclick="checkout()">Genomför köp <span class="inlinebadge">FR87 FR89 NFR19</span></button>
+  </div>
+
+  <div class="card"><h2>Ordrar <span class="badge">FR91 FR94 FR95 FR96 FR97 FR98 FR99 FR125 FR126 FR143 NFR20 NFR23 NFR27</span></h2>
+    <table><tr><th>Order</th><th>Kund</th><th>Varor</th><th>Status</th><th>Avisering</th><th>Åtgärd</th></tr>
+    ${orders.map((o,i)=>`<tr class="${o.delayed?'flagged':''}"><td>${o.id}</td><td>${esc(o.customer)}</td><td>${o.items.join(', ')}</td>
+      <td><span class="tag ${o.status==='Påbörjad'?'open':o.status==='Skickad'?'pag':'lost'}">${o.cancelled?'Avbruten':o.status}</span>${o.delayed?' <span class="assume">Försenad – meddelande skickat FR125</span>':''}</td>
+      <td class="small">Mail+app+webb skickat <span class="inlinebadge">FR88 FR95 FR143</span></td>
+      <td>
+        ${!o.cancelled?`<button class="sm danger" onclick="cancelOrder(${i})">Avbryt order <span class="inlinebadge">FR93</span></button>`:''}
+        <button class="sm" onclick="advanceOrder(${i})">Nästa status</button>
+        <button class="sm" onclick="refundOrder(${i})">Återbetala <span class="inlinebadge">FR90 NFR25</span></button>
+      </td></tr>`).join('')}
+    </table>
+    <button class="sm" onclick="generateReceipt()">Generera kvitto (inom 5 min) <span class="inlinebadge">FR96</span></button>
+    <p class="small">Lagersaldo reserveras direkt vid order <span class="inlinebadge">FR126</span>. Belastningstest genomförs 14 dagar före kampanjvecka <span class="inlinebadge">NFR32 NFR33</span>, order registreras &lt;3s vid 5x belastning <span class="inlinebadge">NFR27 DS16 DS17</span>.</p>
+  </div>
+
+  <div class="card"><h2>Marknadskampanjer <span class="badge">FR144 MEA13</span></h2>
+    <div class="row">
+      <select id="campProd" class="col">${products.map(p=>`<option>${p.name}</option>`).join('')}</select>
+      <input id="campDiscount" placeholder="Rabatt %" class="col" type="number">
+      <button class="sm primary" onclick="publishCampaign()">Publicera kampanj</button>
+    </div>
+    <table><tr><th>Produkt</th><th>Rabatt</th><th>Beskrivning</th></tr>
+      ${campaigns.map(c=>`<tr><td>${c.prod}</td><td>${c.disc}%</td><td>Riktad mot lönsamma kundsegment <span class="inlinebadge">MEA13</span></td></tr>`).join('')||'<tr><td colspan=3 class="small">Inga kampanjer ännu</td></tr>'}
+    </table>
+  </div>
+  `;
+}
+function avg(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;}
+function addToCart(id){const p=products.find(x=>x.id===id);cart.push({name:p.name,price:p.price});render();}
+function removeFromCart(i){cart.splice(i,1);render();}
+function checkout(){
+  if(cart.length===0)return;
+  orders.push({id:'ORD-'+(1000+orders.length+1),customer:'Ny kund',status:'Påbörjad',date:new Date().toISOString().slice(0,10),items:cart.map(c=>c.name),cancelled:false,delayed:false});
+  cart=[];render();
+}
+function cancelOrder(i){orders[i].cancelled=true;render();}
+function advanceOrder(i){
+  const steps=['Påbörjad','Skickad','Levererad'];
+  let idx=steps.indexOf(orders[i].status);
+  if(idx<steps.length-1)orders[i].status=steps[idx+1];
+  render();
+}
+function refundOrder(i){alert('Återbetalning hanteras inom 2-5 bankdagar (NFR25), inom 30 dagar efter mottagen produkt (FR90).');}
+function generateReceipt(){alert('Kvitto genererat inom 5 minuter.');}
+function publishCampaign(){
+  const prod=document.getElementById('campProd').value;
+  const disc=document.getElementById('campDiscount').value||'0';
+  campaigns.push({prod,disc});render();
+}
+
+// ===================== CATALOG =====================
+function renderCatalog(){
+  return `
+  <div class="card"><h2>Sortimentshantering <span class="badge">FR36 FR37 FR46 FR108 FR60 FR119 FR44</span></h2>
+    <div class="row">
+      <input id="newProdName" placeholder="Produktnamn" class="col">
+      <select id="newProdCat" class="col"><option>Datorer</option><option>Hörlurar</option><option>Kameror</option></select>
+      <button class="sm primary" onclick="addProduct()">Lägg till produkt</button>
+    </div>
+    <p class="small">Produktkategorier har egna fält: Datorer: processor/RAM/lagring <span class="inlinebadge">FR113</span>, Hörlurar: batteritid/anslutning <span class="inlinebadge">FR114</span>, Kameror: sensorstorlek/zoom <span class="inlinebadge">FR115</span></p>
+    <table><tr><th>Namn</th><th>Kategori</th><th>Pris</th><th>Lager</th><th>Specifika fält</th><th>Status</th><th>Åtgärd</th></tr>
+    ${products.map((p,i)=>`<tr class="${p.archived?'archived':''}">
+      <td>${esc(p.name)} ${!p.img?'<span class="inlinebadge">FR112 platshållarbild</span>':''}</td>
+      <td>${p.cat}</td>
+      <td><input type="number" value="${p.price}" style="width:70px" onchange="setPrice(${i},this.value)"> <span class="inlinebadge">FR48</span></td>
+      <td>${p.stock} <span class="inlinebadge">FR47 auto-API</span></td>
+      <td class="small">${p.cat==='Datorer'?`CPU:${p.processor} RAM:${p.ram} Lagring:${p.storage}`:p.cat==='Hörlurar'?`Batteri:${p.battery} Anslutning:${p.conn}`:`Sensor:${p.sensor} Zoom:${p.zoom}`}
+      <br><button class="sm" onclick="editSpec(${i})">Uppdatera specifikation <span class="inlinebadge">FR49</span></button></td>
+      <td>${p.archived?'Arkiverad':'Aktiv'}</td>
+      <td>
+        ${!p.archived?`<button class="sm danger" onclick="archiveProduct(${i})">Arkivera <span class="inlinebadge">FR50</span></button>`:`<button class="sm" onclick="directLink(${i})">Direktlänk för tidigare köpare <span class="inlinebadge">FR51</span></button>`}
+        <button class="sm" onclick="uploadImage(${i})">Ladda upp bild <span class="inlinebadge">FR45 NFR13</span></button>
+        <button class="sm" onclick="suggestChange(${i})">Föreslå sortimentsändring <span class="inlinebadge">FR60 FR108</span></button>
+      </td>
+    </tr>`).join('')}
+    </table>
+    <p class="small">Arkiverade produkter döljs i listning <span class="inlinebadge">FR110</span> och sökresultat <span class="inlinebadge">FR111</span>. Produktinfo visas identiskt på hemsida <span class="inlinebadge">FR44</span> och app <span class="inlinebadge">FR119</span>. Uppetid minst 99%/mån <span class="inlinebadge">NFR12</span>, lagerändring synlig inom 15 min <span class="inlinebadge">NFR11</span>.</p>
+  </div>
+
+  <div class="card"><h2>Recensioner &amp; betyg <span class="badge">FR52 FR53 FR54 FR55 FR56 FR57 FR58 FR59 FR109 FR120 FR121 NFR14</span></h2>
+    ${products.map((p,i)=>`
+      <h3 style="font-size:13px">${esc(p.name)} <span class="small">snitt ${avg(p.ratings).toFixed(1)}/5</span></h3>
+      <table><tr><th>Användare</th><th>Betyg</th><th>Text</th><th>Verifierad</th><th>Flagga</th><th>Åtgärd</th></tr>
+      ${p.reviews.map((r,ri)=>`<tr class="${r.flagged?'flagged':''}">
+        <td>${esc(r.user)}</td><td>${'★'.repeat(r.stars)}</td><td>${esc(r.text)}</td>
+        <td>${r.verified?'Ja <span class="inlinebadge">FR54</span>':'Nej'}</td>
+        <td>${r.flagged?'Flaggad <span class="inlinebadge">FR59</span>':`<button class="sm" onclick="flagReview(${i},${ri})">Flagga</button>`}</td>
+        <td>
+          ${r.flagged?`<button class="sm" onclick="reviewFlag(${i},${ri})">Granska (inom 24h) <span class="inlinebadge">FR120 NFR14</span></button>
+          <button class="sm danger" onclick="removeReview(${i},${ri})">Ta bort <span class="inlinebadge">FR121</span></button>
+          <button class="sm" onclick="markFake(${i},${ri})">Markera falsk <span class="inlinebadge">FR109</span></button>`:''}
+          <button class="sm" onclick="editReview(${i},${ri})">Redigera (egen) <span class="inlinebadge">FR57</span></button>
+          <button class="sm" onclick="removeReview(${i},${ri})">Ta bort (egen) <span class="inlinebadge">FR58</span></button>
+        </td>
+      </tr>`).join('')||'<tr><td colspan=6 class="small">Inga recensioner</td></tr>'}
+      </table>
+      <div class="row">
+        <select id="starSel${i}"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select>
+        <input id="reviewText${i}" placeholder="Skriv recension..." class="col">
+        <input id="orderNum${i}" placeholder="Ordernummer (valfritt)" style="width:140px">
+        <button class="sm primary" onclick="addReview(${i})">Lämna recension/betyg</button>
+      </div>
+    `).join('')}
+  </div>
+  `;
+}
+function addProduct(){
+  const name=document.getElementById('newProdName').value||'Ny produkt';
+  const cat=document.getElementById('newProdCat').value;
+  products.push({id:products.length+1,name,cat,price:0,stock:0,desc:'Ny produktbeskrivning',img:false,archived:false,
+    processor:'-',ram:'-',storage:'-',battery:'-',conn:'-',sensor:'-',zoom:'-',ratings:[],reviews:[]});
+  render();
+}
+function setPrice(i,val){products[i].price=parseInt(val)||0;render();}
+function editSpec(i){alert('Tekniska specifikationer uppdaterade (FR49).');}
+function archiveProduct(i){products[i].archived=true;render();}
+function directLink(i){alert('Direktlänk till arkiverad produkt genererad för tidigare köpare (FR51).');}
+function uploadImage(i){products[i].img=true;render();}
+function suggestChange(i){alert('Sortimentsförändring registrerad för '+products[i].name+' (FR60/FR108).');}
+function flagReview(pi,ri){products[pi].reviews[ri].flagged=true;render();}
+function reviewFlag(pi,ri){alert('Recension granskad av sortimentsansvarig inom 24 timmar (FR120, NFR14).');}
+function removeReview(pi,ri){products[pi].reviews.splice(ri,1);render();}
+function markFake(pi,ri){alert('Recension flaggad som falsk (FR109).');}
+function editReview(pi,ri){const t=prompt('Redigera recension:',products[pi].reviews[ri].text);if(t!==null){products[pi].reviews[ri].text=t;render();}}
+function addReview(i){
+  const stars=parseInt(document.getElementById('starSel'+i).value);
+  const text=document.getElementById('reviewText'+i).value||'(ingen text)';
+  const ord=document.getElementById('orderNum'+i).value;
+  products[i].ratings.push(stars);
+  products[i].reviews.push({user:'Du',text,verified:!!ord,flagged:false,stars});
+  render();
+}
+
+// ===================== PURCHASE =====================
+function renderPurchase(){
+  return `
+  <div class="card"><h2>Leverantörer <span class="badge">FR61 FR62</span></h2>
+    <div class="row">
+      <input id="supName" placeholder="Namn" class="col">
+      <input id="supContact" placeholder="Kontakt" class="col">
+      <input id="supTerms" placeholder="Betalningsvillkor" class="col">
+      <input id="supLead" placeholder="Leveranstid" class="col">
+      <button class="sm primary" onclick="addSupplier()">Registrera leverantör</button>
+    </div>
+    <table><tr><th>Namn</th><th>Kontakt</th><th>Villkor</th><th>Leveranstid</th></tr>
+    ${suppliers.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.contact)}</td><td>${esc(s.terms)}</td><td>${esc(s.leadtime)}</td></tr>`).join('')}
+    </table>
+  </div>
+
+  <div class="card"><h2>Produktkatalog (inköp) <span class="badge">FR62</span></h2>
+    <table><tr><th>Artikelnr</th><th>Benämning</th><th>Leverantör</th><th>Inköpspris</th></tr>
+    ${products.map((p,i)=>`<tr><td>ART-${p.id}</td><td>${esc(p.name)}</td><td>${suppliers[0]?.name||'-'}</td><td>${Math.round(p.price*0.6)} kr</td></tr>`).join('')}
+    </table>
+    <p class="small">Loggas och sparas i minst 10 år <span class="inlinebadge">NFR17</span></p>
+  </div>
+
+  <div class="card"><h2>Inköpsorder <span class="badge">FR63 FR64 FR65 FR66 FR67 FR68 FR84</span></h2>
+    <div class="row">
+      <select id="poSupplier" class="col">${suppliers.map(s=>`<option>${s.name}</option>`).join('')}</select>
+      <select id="poProduct" class="col">${products.map(p=>`<option>${p.name}</option>`).join('')}</select>
+      <input id="poQty" type="number" placeholder="Antal" style="width:90px">
+      <button class="sm primary" onclick="createPO()">Skapa inköpsorder</button>
+    </div>
+    <p class="small">Aktuellt lagersaldo visas vid skapande <span class="inlinebadge">FR65</span>: ${products.map(p=>p.name+': '+p.stock).join(', ')}</p>
+    <div class="row">
+      <select id="stockProd" class="col">${products.map(p=>`<option>${p.name}</option>`).join('')}</select>
+      <input id="reorderPoint" type="number" placeholder="Beställningspunkt" style="width:140px">
+      <button class="sm" onclick="setReorder()">Markera lagerhållen + beställningspunkt <span class="inlinebadge">FR66</span></button>
+    </div>
+    <table><tr><th>Order</th><th>Leverantör</th><th>Status</th><th>Rader</th><th>Åtgärd</th></tr>
+    ${purchaseOrders.map((po,i)=>`<tr><td>${po.id}</td><td>${esc(po.supplier)}</td><td><span class="tag ${po.status==='Skickad'?'pag':'lost'}">${po.status}</span></td>
+      <td>${po.lines.map(l=>l.product+' x'+l.qty).join(', ')}</td>
+      <td>${po.status!=='Skickad'?`<button class="sm good" onclick="sendPO(${i})">Skicka till leverantör <span class="inlinebadge">FR68</span></button>`:'<span class="small">Skickad</span>'}</td>
+      </tr>`).join('')}
+    </table>
+    <button class="sm" onclick="autoReorder()">Simulera lågt saldo → auto-orderförslag <span class="inlinebadge">FR67</span></button>
+    <p class="small">Översikt öppna inköpsordrar och specialbeställningar visas här <span class="inlinebadge">FR84</span>: ${purchaseOrders.filter(p=>p.status==='Skickad').length} öppna PO, ${specialRequests.length} specialbeställningar.</p>
+  </div>
+
+  <div class="card"><h2>Godsmottagning &amp; lager <span class="badge">FR69 FR70 FR71 FR72 NFR15 NFR16 NFR18</span></h2>
+    <div class="row">
+      <select id="recvPO" class="col">${purchaseOrders.map(p=>`<option>${p.id}</option>`).join('')}</select>
+      <input id="recvQty" type="number" placeholder="Mottaget antal" style="width:120px">
+      <button class="sm primary" onclick="receiveGoods()">Registrera mottagning (ev. delleverans)</button>
+    </div>
+    <table><tr><th>Datum</th><th>Användare</th><th>Ändring</th><th>Orsak</th></tr>
+    ${stockLog.map(l=>`<tr><td>${l.date}</td><td>${esc(l.user)}</td><td>${l.change}</td><td>${esc(l.reason)}</td></tr>`).join('')}
+    </table>
+    <p class="small">Lagersaldo uppdateras automatiskt <span class="inlinebadge">FR71 NFR15</span>, avvikelser mellan beställt/levererat flaggas <span class="inlinebadge">FR70</span>, dagliga backuper med 5h återställning <span class="inlinebadge">NFR16</span>, ekonomisystem-integration <span class="inlinebadge">NFR18</span>.</p>
+  </div>
+  `;
+}
+function addSupplier(){
+  suppliers.push({name:document.getElementById('supName').value||'Ny leverantör',contact:document.getElementById('supContact').value,terms:document.getElementById('supTerms').value,leadtime:document.getElementById('supLead').value});
+  render();
+}
+function createPO(){
+  const supplier=document.getElementById('poSupplier').value;
+  const product=document.getElementById('poProduct').value;
+  const qty=parseInt(document.getElementById('poQty').value)||1;
+  purchaseOrders.push({id:'PO-'+(purchaseOrders.length+1),supplier,status:'Utkast',lines:[{product,qty}]});
+  render();
+}
+function sendPO(i){purchaseOrders[i].status='Skickad';render();}
+function setReorder(){alert('Produkt markerad som lagerhållen med vald beställningspunkt (FR66).');}
+function autoReorder(){
+  purchaseOrders.push({id:'PO-'+(purchaseOrders.length+1),supplier:suppliers[0]?.name||'-',status:'Förslag (lågt saldo)',lines:[{product:products[1].name,qty:20}]});
+  render();
+}
+function receiveGoods(){
+  const po=document.getElementById('recvPO').value;
+  const qty=document.getElementById('recvQty').value||0;
+  stockLog.push({date:new Date().toISOString().slice(0,10),user:'Lagerpersonal',change:'+'+qty,reason:'Mottagning '+po});
+  render();
+}
+
+// ===================== MARKET =====================
+function renderMarket(){
+  return `
+  <div class="card"><h2>Konkurrentbevakning <span class="badge">FR21 FR22 FR23 NFR8 NFR9 FR132</span></h2>
+    <div class="row">
+      <input id="compName" placeholder="Namn" class="col">
+      <input id="compCountry" placeholder="Land" style="width:90px">
+      <input id="compUrl" placeholder="Webbadress" class="col">
+      <button class="sm primary" onclick="addCompetitor()">Registrera konkurrent</button>
+    </div>
+    <table><tr><th>Namn</th><th>Land</th><th>URL</th><th>Åtgärd</th></tr>
+    ${competitors.map((c,i)=>`<tr><td>${esc(c.name)}</td><td>${c.country}</td><td>${esc(c.url)}</td>
+      <td><button class="sm" onclick="scrapeCompetitor(${i})">Hämta sortiment+priser <span class="inlinebadge">FR22 FR132 FR23</span></button></td></tr>`).join('')}
+    </table>
+    <p class="small">Data uppdateras minst 1 gång/dygn <span class="inlinebadge">NFR8</span>, hanterar 50 konkurrenter/200 leverantörer under 3s <span class="inlinebadge">NFR9</span></p>
+  </div>
+
+  <div class="card"><h2>Sociala medier-bevakning <span class="badge">FR24 FR116 FR117 FR118 FR25 FR26 FR133 FR134 FR135 FR136</span></h2>
+    <div class="row">
+      <input id="infName" placeholder="Influencer-namn" class="col">
+      <button class="sm primary" onclick="addInfluencer()">Registrera influencer <span class="inlinebadge">FR25</span></button>
+    </div>
+    <table><tr><th>Influencer</th><th>Plattformar</th></tr>
+    ${influencers.map(i=>`<tr><td>${esc(i.name)}</td><td>${i.platforms.join(', ')}</td></tr>`).join('')}
+    </table>
+    <p class="small">Bevakar Facebook <span class="inlinebadge">FR116 FR134</span>, Instagram <span class="inlinebadge">FR117 FR135</span>, TikTok <span class="inlinebadge">FR118 FR136</span> efter sökord.</p>
+    <h3 style="font-size:13px">Topp 10 omnämnda produkter <span class="inlinebadge">FR26</span></h3>
+    <div class="row"><select id="periodSel"><option>Senaste veckan</option><option>Senaste månaden</option></select>
+    <button class="sm" onclick="filterPeriod()">Filtrera period <span class="inlinebadge">FR142</span></button></div>
+    <ol>${products.slice(0,3).map(p=>`<li>${p.name}</li>`).join('')}</ol>
+  </div>
+
+  <div class="card"><h2>Leverantörsbevakning <span class="badge">FR29 FR30 FR137</span></h2>
+    <button class="sm" onclick="scanSuppliers()">Sök nya produkter hos leverantörer</button>
+    <p class="small">Notifiering via mail skickas till medarbetare vid ny produkt i bevakad kategori <span class="inlinebadge">FR30</span></p>
+  </div>
+
+  <div class="card"><h2>Kundundersökningar <span class="badge">FR107 FR27 FR28</span></h2>
+    <div class="row">
+      <input id="surveyTitle" placeholder="Titel" class="col">
+      <select id="surveyType"><option>flerval</option><option>skala</option><option>fritext</option></select>
+      <button class="sm primary" onclick="createSurvey()">Skapa enkät</button>
+    </div>
+    <table><tr><th>Titel</th><th>Typ</th><th>Status</th><th>Åtgärd</th></tr>
+    ${surveys.map((s,i)=>`<tr><td>${esc(s.title)}</td><td>${s.type}</td><td>${s.sent?'Skickad':'Ej skickad'}</td>
+      <td><button class="sm" onclick="sendSurvey(${i})">Skicka via mail <span class="inlinebadge">FR27</span></button>
+      <button class="sm" onclick="compileSurvey(${i})">Sammanställ i tabell <span class="inlinebadge">FR28</span></button></td></tr>`).join('')}
+    </table>
+  </div>
+
+  <div class="card"><h2>Anteckningar <span class="badge">FR31 FR138 FR139 FR140</span></h2>
+    <div class="row">
+      <select id="noteType"><option>Produkt</option><option>Konkurrent</option><option>Leverantör</option></select>
+      <input id="noteText" placeholder="Anteckning" class="col">
+      <button class="sm primary" onclick="addNote()">Spara anteckning</button>
+    </div>
+    <ul>${marketNotes.map(n=>`<li>[${n.type}] ${esc(n.text)}</li>`).join('')||'<li class="small">Inga anteckningar</li>'}</ul>
+  </div>
+
+  <div class="card"><h2>Marknadsanalysrapport <span class="badge">FR32 FR33 FR34 FR35 FR131 FR141 FR142 NFR10</span></h2>
+    <div class="row">
+      <select id="catFilter"><option>Alla</option><option>Datorer</option><option>Hörlurar</option><option>Kameror</option></select>
+      <button class="sm" onclick="filterCategory()">Filtrera kategori <span class="inlinebadge">FR32</span></button>
+      <button class="sm primary" onclick="generateReport()">Generera rapport (inom 30s) <span class="inlinebadge">NFR10 FR33</span></button>
+    </div>
+    <table><tr><th>Rapport</th><th>Datum</th><th>Åtgärd</th></tr>
+    ${marketReports.map((r,i)=>`<tr><td>Rapport #${r.id}</td><td>${r.date}</td>
+      <td><button class="sm" onclick="compareReports()">Jämför med annan rapport <span class="inlinebadge">FR141</span></button></td></tr>`).join('')}
+    </table>
+    <button class="sm" onclick="markPurchaseSuggestion()">Markera produkt som inköpsförslag <span class="inlinebadge">FR34 FR131</span></button>
+  </div>
+  `;
+}
+function addCompetitor(){
+  competitors.push({name:document.getElementById('compName').value||'Ny konkurrent',country:document.getElementById('compCountry').value||'-',url:document.getElementById('compUrl').value||'-'});
+  render();
+}
+function scrapeCompetitor(i){alert('Sortiment och priser hämtade automatiskt från '+competitors[i].url+' (FR22, FR132, FR23).');}
+function addInfluencer(){influencers.push({name:document.getElementById('infName').value||'Ny influencer',platforms:['Facebook','Instagram','TikTok']});render();}
+function filterPeriod(){alert('Analysresultat filtrerat efter vald tidsperiod (FR142).');}
+function scanSuppliers(){alert('Leverantörers kataloger genomsökta efter nya produkter (FR29). Notifiering skickad (FR30).');}
+function createSurvey(){
+  surveys.push({id:surveys.length+1,title:document.getElementById('surveyTitle').value||'Ny enkät',type:document.getElementById('surveyType').value,sent:false});
+  render();
+}
+function sendSurvey(i){surveys[i].sent=true;render();}
+function compileSurvey(i){alert('Svar sammanställda i tabell (FR28).');}
+function addNote(){
+  marketNotes.push({type:document.getElementById('noteType').value,text:document.getElementById('noteText').value||'(tom)'});
+  render();
+}
+function filterCategory(){alert('Analysresultat filtrerat efter produktkategori (FR32).');}
+function generateReport(){marketReports.push({id:marketReports.length+1,date:new Date().toISOString().slice(0,10)});render();}
+function compareReports(){alert('Två sparade marknadsanalysrapporter jämförs (FR141).');}
+function markPurchaseSuggestion(){alert('Produkt markerad som inköpsförslag och skickad till inköpsansvarig (FR34, FR131).');}
+
+// ===================== SPECIAL =====================
+function renderSpecial(){
+  return `
+  <div class="card"><h2>Specialbeställning <span class="badge">FR102 FR103 FR104 FR105 FR106 FR73 FR74 FR75 FR76 FR77 FR78 FR79 FR80 FR81 FR82</span></h2>
+    <div class="row">
+      <input id="spCust" placeholder="Kundnamn" class="col">
+      <input id="spProd" placeholder="Önskad produkt" class="col">
+      <input id="spSpec" placeholder="Specifikation" class="col">
+      <button class="sm primary" onclick="addSpecialRequest()">Registrera förfrågan <span class="inlinebadge">FR102 FR104 FR73</span></button>
+    </div>
+    <table><tr><th>ID</th><th>Kund</th><th>Produkt</th><th>Status</th><th>Leverantörsland</th><th>Tillgänglighet</th><th>Pris</th><th>Förbetald</th><th>Åtgärd</th></tr>
+    ${specialRequests.map((s,i)=>`<tr>
+      <td>${s.id}</td><td>${esc(s.customer)}</td><td>${esc(s.product)}</td>
+      <td><span class="tag pag">${s.status}</span></td>
+      <td>${s.supplierCountry} <span class="inlinebadge">FR74</span></td>
+      <td>${s.availability} <span class="inlinebadge">FR75</span></td>
+      <td>${s.price} kr / ${s.leadtime} <span class="inlinebadge">FR76</span></td>
+      <td>${s.prepaid?'Ja':'Nej'}</td>
+      <td>
+        <button class="sm" onclick="connectSeller(${i})">Koppla säljare <span class="inlinebadge">FR103</span></button>
+        <button class="sm" onclick="sendToPurchase(${i})">Vidarebefordra till inköp <span class="inlinebadge">FR105</span></button>
+        <button class="sm" onclick="customerApprove(${i})">Kund godkänner offert <span class="inlinebadge">FR77</span></button>
+        <button class="sm" onclick="registerPrepay(${i})" ${s.prepaid?'disabled':''}>Registrera förbetalning <span class="inlinebadge">FR78</span></button>
+        <button class="sm" ${!s.prepaid?'disabled':''} onclick="sendSpecialPO(${i})">Skicka inköpsorder <span class="inlinebadge">FR79</span></button>
+        <button class="sm" onclick="refundSpecial(${i})">Återbetala (ej tillgänglig) <span class="inlinebadge">FR81</span></button>
+        <button class="sm" onclick="deliverSpecial(${i})">Hantera leverans till kund <span class="inlinebadge">FR106 FR99</span></button>
+      </td>
+    </tr>`).join('')}
+    </table>
+    <p class="small">Inköpsorder spärras tills förbetalning registrerats <span class="inlinebadge">FR79</span>. Specialbeställda produkter hålls åtskilda i lager och kopplade till kund <span class="inlinebadge">FR82</span>. Statushantering för specialbeställningar <span class="inlinebadge">FR80</span>.</p>
+  </div>
+  `;
+}
+function addSpecialRequest(){
+  const customer=document.getElementById('spCust').value||'Ny kund';
+  const product=document.getElementById('spProd').value||'Ny produkt';
+  specialRequests.push({id:'SR-'+(specialRequests.length+1),customer,product,status:'Registrerad',supplierCountry:'-',availability:'okänd',price:0,leadtime:'-',prepaid:false});
+  render();
+}
+function connectSeller(i){alert('Kund kopplad till säljare (FR103).');}
+function sendToPurchase(i){specialRequests[i].status='Skickad till inköp';specialRequests[i].supplierCountry='Kina';specialRequests[i].availability='tillgänglig';specialRequests[i].price=5000;specialRequests[i].leadtime='2 veckor';render();}
+function customerApprove(i){specialRequests[i].status='Offert godkänd';render();}
+function registerPrepay(i){specialRequests[i].prepaid=true;specialRequests[i].status='Förbetald';render();}
+function sendSpecialPO(i){if(!specialRequests[i].prepaid){alert('Kan inte skicka inköpsorder innan förbetalning (FR79).');return;}specialRequests[i].status='Inköpsorder skickad';render();}
+function refundSpecial(i){alert('Återbetalning hanterad för otillgänglig produkt (FR81).');}
+function deliverSpecial(i){specialRequests[i].status='Levererad till kund';render();}
+
+// ===================== GDPR =====================
+function renderGdpr(){
+  return `
+  <div class="card"><h2>GDPR-förfrågningar <span class="badge">FR129 FR130 FR17 NFR31 NFR6</span></h2>
+    <div class="row">
+      <input id="gdprCust" placeholder="Kundnamn/e-post" class="col">
+      <select id="gdprType"><option>Utdrag</option><option>Radering</option></select>
+      <button class="sm primary" onclick="addGdprRequest()">Registrera begäran</button>
+    </div>
+    <table><tr><th>Kund</th><th>Typ</th><th>Status</th><th>Frist</th><th>Åtgärd</th></tr>
+    ${gdprRequests.map((g,i)=>`<tr><td>${esc(g.customer)}</td><td>${g.type}</td><td>${g.done?'Klar':'Väntar'}</td>
+      <td class="small">Inom 1 månad <span class="inlinebadge">NFR31</span>${g.type==='Radering'?' <span class="assume">Kan krocka med sparkrav NFR17/NFR29</span>':''}</td>
+      <td><button class="sm good" onclick="completeGdpr(${i})">${g.type==='Utdrag'?'Skapa utdrag':'Radera uppgifter'} <span class="inlinebadge">${g.type==='Utdrag'?'FR129':'FR130'}</span></button></td>
+      </tr>`).join('')}
+    </table>
+  </div>
+  `;
+}
+function addGdprRequest(){
+  gdprRequests.push({customer:document.getElementById('gdprCust').value||'Okänd',type:document.getElementById('gdprType').value,done:false});
+  render();
+}
+function completeGdpr(i){gdprRequests[i].done=true;render();}
+
+// ===================== ADMIN =====================
+function renderAdmin(){
+  return `
+  <div class="card"><h2>Roller &amp; behörigheter <span class="badge">FR83</span></h2>
+    <div class="row">
+      <select id="roleSel" onchange="setRole(this.value)">${roles.map(r=>`<option ${r===currentRole?'selected':''}>${r}</option>`).join('')}</select>
+    </div>
+    <p class="small">Aktuell roll: <b>${currentRole}</b>. Endast behöriga roller kan utföra respektive funktion (prototyp: visuell markering) <span class="assume">förenklad behörighetslogik</span></p>
+  </div>
+  <div class="card"><h2>Globala krav <span class="badge">CBF13 NFR4 NFR6 NFR7</span></h2>
+    <ul>
+      <li>Uppetid minst 99% per månad <span class="inlinebadge">NFR4</span></li>
+      <li>GDPR-skydd vid all lagring av chatt-/ärendehistorik <span class="inlinebadge">NFR6</span></li>
+      <li>Tjänster tillgängliga på svenska och engelska <span class="inlinebadge">NFR7</span> (växla med knappen uppe till höger)</li>
+    </ul>
+  </div>
+  `;
+}
+function setRole(r){currentRole=r;render();}
+
+function wire(){} // placeholder, all handlers use inline onclick resolved globally
+
+render();
+</script>
+</body>
+</html>
