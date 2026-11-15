@@ -15,3 +15,6 @@ The repository includes two worked examples, each example consists of the feedba
 
 ## Viewing the Prototypes
 To view the prototypes download the corresponding .html file from the repository and open locally.
+To view the prototype in GitHub, make sure that the button in the upper right corner shows "JS on".
+<img width="1097" height="321" alt="image" src="https://github.com/user-attachments/assets/d14e733b-bdab-48a8-aac4-9f90c162ec31" />
+
