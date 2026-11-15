@@ -1007,5 +1007,9 @@ function render(){
 render();
 </script>
 <div class="screen active" id="bootstrap-screen" style="display:none">FR45 FR94 DS2 DS1 DS3 DS4 DS7</div>
+  <style id="js-off-fallback">
+  .screen { display: block !important; }
+</style>
+<script>document.getElementById('js-off-fallback').remove();</script>
 </body>
 </html>
